@@ -651,7 +651,6 @@ void StartOpeningGangMenu(int client)
 
 public void SQLCallback_OpenGangMenu(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
 {
-
 	if (hHndl == null)
 	{
 		SetDBHandle();
@@ -2005,24 +2004,23 @@ public void SQLCallback_CheckIfInDatabase_Player(Database db, DBResultSet result
 	Format(sQuery2, sizeof(sQuery2), "SELECT * FROM hl_gangs_groups WHERE gang=\"%s\"", ga_sGangName[client]);
 	
 	g_hDatabase.Query(SQLCALLBACK_GROUPS, sQuery2, GetClientUserId(client));
-
 }
-public void SQLCALLBACK_GROUPS(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
-{
 
-	if (hHndl == null)
+public void SQLCALLBACK_GROUPS(Database db, DBResultSet results, const char[] error, int data)
+{
+	if (db == null)
 	{
 		SetDBHandle();
 	}
 
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 
 	if (!IsValidClient(client))
 	{
 		return;
 	}
 
-	if (SQL_GetRowCount(hHndl) == 0)
+	if (results.RowCount == 0)
 	{
 		ga_bIsGangInDatabase[client] = false;
 	}
@@ -2050,22 +2048,21 @@ public void SQLCALLBACK_GROUPS(Handle hOwner, Handle hHndl, const char[] sError,
 }
 
 
-public void SQL_Callback_LoadStatistics(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
+public void SQL_Callback_LoadStatistics(Database db, DBResultSet results, const char[] error, int data)
 {
-
-	if (hHndl == null)
+	if (db == null)
 	{
 		SetDBHandle();
 	}
 
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 
 	if (!IsValidClient(client))
 	{
 		return;
 	}
 
-	if (SQL_GetRowCount(hHndl) == 0)
+	if (results.RowCount == 0)
 	{
 		ga_bIsGangInDatabase[client] = false;
 	}
