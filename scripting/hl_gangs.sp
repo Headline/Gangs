@@ -674,43 +674,43 @@ public void SQLCallback_OpenGangMenu(Handle hOwner, Handle hHndl, const char[] s
 
 void OpenGangsMenu(int client)
 {
-	Handle hMenu = CreateMenu(GangsMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
+	Handle menu = CreateMenu(GangsMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
 	if (ga_bHasGang[client])
 	{
 		char sString[128];
 		Format(sString, sizeof(sString), "[CG] Gangs Menu \nCredits: %i \nCurrent Gang: %s %i/%i", GetClientCredits(client), ga_sGangName[client], ga_iGangSize[client], gcv_iMaxGangSize.IntValue + ga_iSize[client]);
-		SetMenuTitle(hMenu, sString);
+		SetMenuTitle(menu, sString);
 	}
 	else
 	{
 		char sString[128];
 		Format(sString, sizeof(sString), "[CG] Gangs Menu \nCredits: %i \nCurrent Gang: N/A \n ", GetClientCredits(client));
-		SetMenuTitle(hMenu, sString);
+		SetMenuTitle(menu, sString);
 	}
 	char sDisplayBuffer[128];
 	
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Create a Gang! [%i Credits]", gcv_iCreateGangPrice.IntValue);
-	AddMenuItem(hMenu, "create", sDisplayBuffer, (ga_bHasGang[client] || GetClientCredits(client) < gcv_iCreateGangPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
-	AddMenuItem(hMenu, "invite", "Invite to Gang", (ga_bHasGang[client] && ga_iRank[client] > GANGRANK_NORMAL && ga_iGangSize[client] < gcv_iMaxGangSize.IntValue + ga_iSize[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	AddMenuItem(hMenu, "members", "Gang Members", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	AddMenuItem(hMenu, "perks", "Gang Perks", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	AddMenuItem(hMenu, "admin", "Gang Admin", (ga_iRank[client] >= 1)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	AddMenuItem(hMenu, "leave", "Leave Gang", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	AddMenuItem(hMenu, "topgangs", "Top Gangs");
+	AddMenuItem(menu, "create", sDisplayBuffer, (ga_bHasGang[client] || GetClientCredits(client) < gcv_iCreateGangPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	AddMenuItem(menu, "invite", "Invite to Gang", (ga_bHasGang[client] && ga_iRank[client] > GANGRANK_NORMAL && ga_iGangSize[client] < gcv_iMaxGangSize.IntValue + ga_iSize[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "members", "Gang Members", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "perks", "Gang Perks", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "admin", "Gang Admin", (ga_iRank[client] >= 1)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "leave", "Leave Gang", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "topgangs", "Top Gangs");
 
 	
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 
 }
 
-public int GangsMenu_Callback(Handle hMenu, MenuAction action, int param1, int param2)
+public int GangsMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_Select:
 		{
 			char sInfo[64];
-			GetMenuItem(hMenu, param2, sInfo, sizeof(sInfo));
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 			if (StrEqual(sInfo, "create"))
 			{
 				SetClientCredits(param1, GetClientCredits(param1) - gcv_iCreateGangPrice.IntValue);
@@ -744,7 +744,7 @@ public int GangsMenu_Callback(Handle hMenu, MenuAction action, int param1, int p
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
@@ -846,7 +846,7 @@ public void SQL_Callback_CheckName(Handle hOwner, Handle hHndl, const char[] sEr
 	char sText[64];
 	int client = ReadPackCell(hDatapack);
 	ReadPackString(hDatapack, sText, sizeof(sText));
-	CloseHandle(hDatapack);
+	delete hDatapack;
 
 	if (!IsValidClient(client))
 	{
@@ -964,8 +964,8 @@ public void SQLCallback_OpenMembersMenu(Handle hOwner, Handle hHndl, const char[
 	else
 	{
 
-		Handle hMenu = CreateMenu(MemberListMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-		SetMenuTitle(hMenu, "Member List :");
+		Handle menu = CreateMenu(MemberListMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+		SetMenuTitle(menu, "Member List :");
 
 		while (SQL_FetchRow(hHndl))
 		{
@@ -994,21 +994,21 @@ public void SQLCallback_OpenMembersMenu(Handle hOwner, Handle hHndl, const char[
 			{
 				Format(sDisplayString, sizeof(sDisplayString), "%s (Owner)", a_sTempArray[1]);
 			}
-			AddMenuItem(hMenu, sInfoString, sDisplayString);
+			AddMenuItem(menu, sInfoString, sDisplayString);
 		}
-		SetMenuExitBackButton(hMenu, true);
-		DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+		SetMenuExitBackButton(menu, true);
+		DisplayMenu(menu, client, MENU_TIME_FOREVER);
 	}
 }
 
-public int MemberListMenu_CallBack(Handle hMenu, MenuAction action, int param1, int param2)
+public int MemberListMenu_CallBack(Handle menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_Select:
 		{
 			char sInfo[128];
-			GetMenuItem(hMenu, param2, sInfo, sizeof(sInfo));
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 			OpenIndividualMemberMenu(param1, sInfo);
 		}
 		case MenuAction_Cancel:
@@ -1017,7 +1017,7 @@ public int MemberListMenu_CallBack(Handle hMenu, MenuAction action, int param1, 
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
@@ -1025,8 +1025,8 @@ public int MemberListMenu_CallBack(Handle hMenu, MenuAction action, int param1, 
 
 void OpenIndividualMemberMenu(int client, char[] sInfo)
 {
-	Handle hMenu = CreateMenu(IndividualMemberMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-	SetMenuTitle(hMenu, "Information On : ");
+	Handle menu = CreateMenu(IndividualMemberMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+	SetMenuTitle(menu, "Information On : ");
 
 	char sTempArray[5][64]; // 0 - SteamID | 1 - Name | 2 - Invited By | 3 - Rank | 4 - Date (UTF)
 	char sDisplayBuffer[32];
@@ -1034,13 +1034,13 @@ void OpenIndividualMemberMenu(int client, char[] sInfo)
 	ExplodeString(sInfo, ";", sTempArray, 5, sizeof(sTempArray[]));
 
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Name : %s", sTempArray[1]);
-	AddMenuItem(hMenu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
 
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Steam ID : %s", sTempArray[0]);
-	AddMenuItem(hMenu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
 
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Invited By : %s", sTempArray[2]);
-	AddMenuItem(hMenu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
 
 
 	if (StrEqual(sTempArray[3], "0"))
@@ -1055,20 +1055,20 @@ void OpenIndividualMemberMenu(int client, char[] sInfo)
 	{
 		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Rank : Owner");
 	}
-	AddMenuItem(hMenu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
 
 	char sFormattedTime[64];
 	FormatTime(sFormattedTime, sizeof(sFormattedTime), "%x", StringToInt(sTempArray[4]));
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Date Joined : %s", sFormattedTime);
 
-	AddMenuItem(hMenu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
 
-	SetMenuExitBackButton(hMenu, true);
+	SetMenuExitBackButton(menu, true);
 
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 }
 
-public int IndividualMemberMenu_Callback(Handle hMenu, MenuAction action, int param1, int param2)
+public int IndividualMemberMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -1082,7 +1082,7 @@ public int IndividualMemberMenu_Callback(Handle hMenu, MenuAction action, int pa
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
@@ -1095,8 +1095,8 @@ public int IndividualMemberMenu_Callback(Handle hMenu, MenuAction action, int pa
 
 void OpenInvitationMenu(int client)
 {
-	Handle hMenu = CreateMenu(InvitationMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
-	SetMenuTitle(hMenu, "Invite a player!");
+	Handle menu = CreateMenu(InvitationMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
+	SetMenuTitle(menu, "Invite a player!");
 
 	char sInfoString[64];
 	char sDisplayString[64];
@@ -1107,22 +1107,22 @@ void OpenInvitationMenu(int client)
 		{
 			Format(sInfoString, sizeof(sInfoString), "%i", GetClientUserId(i));
 			Format(sDisplayString, sizeof(sDisplayString), "%N", i);
-			AddMenuItem(hMenu, sInfoString, sDisplayString, (ga_bHasGang[i] || ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+			AddMenuItem(menu, sInfoString, sDisplayString, (ga_bHasGang[i] || ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 		}
 	}
 
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 
 }
 
-public int InvitationMenu_Callback(Handle hMenu, MenuAction action, int param1, int param2)
+public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_Select:
 		{
 			char sInfo[64];
-			GetMenuItem(hMenu, param2, sInfo, sizeof(sInfo));
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 			int iUserID = StringToInt(sInfo);
 
 			ga_iInvitation[GetClientOfUserId(iUserID)] = GetClientUserId(param1);
@@ -1148,7 +1148,7 @@ public int InvitationMenu_Callback(Handle hMenu, MenuAction action, int param1, 
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
@@ -1157,32 +1157,32 @@ public int InvitationMenu_Callback(Handle hMenu, MenuAction action, int param1, 
 
 void OpenGangInvitationMenu(int client)
 {
-	Handle hMenu = CreateMenu(SentInviteMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
-	SetMenuTitle(hMenu, "Invite a player!");
+	Handle menu = CreateMenu(SentInviteMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
+	SetMenuTitle(menu, "Invite a player!");
 	char sDisplayString[64];
 
 	Format(sDisplayString, sizeof(sDisplayString), "%N has invited you to their gang!", GetClientOfUserId(ga_iInvitation[client]));
-	AddMenuItem(hMenu, "", sDisplayString, ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
 
 	Format(sDisplayString, sizeof(sDisplayString), "Would you like to join \"%s\"", ga_sGangName[GetClientOfUserId(ga_iInvitation[client])]);
-	AddMenuItem(hMenu, "", sDisplayString, ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
 
-	AddMenuItem(hMenu, "yes", "Yes, I'd like to join");
+	AddMenuItem(menu, "yes", "Yes, I'd like to join");
 
-	AddMenuItem(hMenu, "no", "No, I'd like to decline");
+	AddMenuItem(menu, "no", "No, I'd like to decline");
 
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 }
 
 
-public int SentInviteMenu_Callback(Handle hMenu, MenuAction action, int param1, int param2)
+public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_Select:
 		{
 			char sInfo[64];
-			GetMenuItem(hMenu, param2, sInfo, sizeof(sInfo));
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 			if (StrEqual(sInfo, "yes"))
 			{
 				ga_sGangName[param1] = ga_sGangName[GetClientOfUserId(ga_iInvitation[param1])];
@@ -1216,7 +1216,7 @@ public int SentInviteMenu_Callback(Handle hMenu, MenuAction action, int param1, 
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
@@ -1253,8 +1253,8 @@ public void SQLCallback_Perks(Handle hOwner, Handle hHndl, const char[] sError, 
 	}
 	else
 	{
-		Handle hMenu = CreateMenu(PerksMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
-		SetMenuTitle(hMenu, "Gang Perks");
+		Handle menu = CreateMenu(PerksMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
+		SetMenuTitle(menu, "Gang Perks");
 		if (SQL_GetRowCount(hHndl) == 1 && SQL_FetchRow(hHndl))
 		{
 			ga_iHealth[client] = SQL_FetchInt(hHndl, 0); // Health
@@ -1267,36 +1267,36 @@ public void SQLCallback_Perks(Handle hOwner, Handle hHndl, const char[] sError, 
 		char sDisplayBuffer[64];
 
 		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Health [%i/10] [%i Credits]", ga_iHealth[client], gcv_iHealthPrice.IntValue);
-		AddMenuItem(hMenu, "health", sDisplayBuffer, (ga_iHealth[client] >= 10 || GetClientCredits(client) < gcv_iHealthPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		AddMenuItem(menu, "health", sDisplayBuffer, (ga_iHealth[client] >= 10 || GetClientCredits(client) < gcv_iHealthPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 
 		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Knife Damage [%i/10] [%i Credits]", ga_iDamage[client], gcv_iDamagePrice.IntValue);
-		AddMenuItem(hMenu, "damage", sDisplayBuffer, (ga_iDamage[client] >= 10 || GetClientCredits(client) < gcv_iDamagePrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		AddMenuItem(menu, "damage", sDisplayBuffer, (ga_iDamage[client] >= 10 || GetClientCredits(client) < gcv_iDamagePrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 
 		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Gravity [%i/10] [%i Credits]", ga_iGravity[client], gcv_iGravityPrice.IntValue);
-		AddMenuItem(hMenu, "gravity", sDisplayBuffer, (ga_iGravity[client] >= 10 || GetClientCredits(client) < gcv_iGravityPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		AddMenuItem(menu, "gravity", sDisplayBuffer, (ga_iGravity[client] >= 10 || GetClientCredits(client) < gcv_iGravityPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 
 		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Speed [%i/10] [%i Credits]", ga_iSpeed[client], gcv_iSpeedPrice.IntValue);
-		AddMenuItem(hMenu, "speed", sDisplayBuffer, (ga_iSpeed[client] >= 10 || GetClientCredits(client) < gcv_iSpeedPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		AddMenuItem(menu, "speed", sDisplayBuffer, (ga_iSpeed[client] >= 10 || GetClientCredits(client) < gcv_iSpeedPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Gang Size [%i/9] [%i Credits]", ga_iSize[client], gcv_iSizePrice.IntValue);
-		AddMenuItem(hMenu, "size", sDisplayBuffer, (ga_iSize[client] >= 9 || GetClientCredits(client) < gcv_iSizePrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		AddMenuItem(menu, "size", sDisplayBuffer, (ga_iSize[client] >= 9 || GetClientCredits(client) < gcv_iSizePrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-		SetMenuExitBackButton(hMenu, true);
-		DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+		SetMenuExitBackButton(menu, true);
+		DisplayMenu(menu, client, MENU_TIME_FOREVER);
 	}
 }
 
-public int PerksMenu_CallBack(Handle hMenu, MenuAction action, int param1, int param2)
+public int PerksMenu_CallBack(Handle menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_Select:
 		{
 			char sInfo[64];
-			GetMenuItem(hMenu, param2, sInfo, sizeof(sInfo));
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 			char sQuery[300];
 			
 			if (StrEqual(sInfo, "health"))
@@ -1346,7 +1346,7 @@ public int PerksMenu_CallBack(Handle hMenu, MenuAction action, int param1, int p
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
@@ -1361,30 +1361,30 @@ public int PerksMenu_CallBack(Handle hMenu, MenuAction action, int param1, int p
 
 void OpenLeaveConfirmation(int client)
 {
-	Handle hMenu = CreateMenu(LeaveConfirmation_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-	SetMenuTitle(hMenu, "Leave Gang?");
+	Handle menu = CreateMenu(LeaveConfirmation_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+	SetMenuTitle(menu, "Leave Gang?");
 
-	AddMenuItem(hMenu, "", "Are you sure you want to leave?", ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "", "Are you sure you want to leave?", ITEMDRAW_DISABLED);
 	if (ga_iRank[client] == GANGRANK_OWNER)
 	{
-		AddMenuItem(hMenu, "", "As owner, leaving will disband your gang!", ITEMDRAW_DISABLED);
+		AddMenuItem(menu, "", "As owner, leaving will disband your gang!", ITEMDRAW_DISABLED);
 	}
 
-	AddMenuItem(hMenu, "yes", "Yes, I'd like to leave!");
-	AddMenuItem(hMenu, "no", "No, nevermind.");
+	AddMenuItem(menu, "yes", "Yes, I'd like to leave!");
+	AddMenuItem(menu, "no", "No, nevermind.");
 
-	SetMenuExitBackButton(hMenu, true);
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+	SetMenuExitBackButton(menu, true);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 }
 
-public int LeaveConfirmation_Callback(Handle hMenu, MenuAction action, int param1, int param2)
+public int LeaveConfirmation_Callback(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_Select:
 		{
 			char sInfo[64];
-			GetMenuItem(hMenu, param2, sInfo, sizeof(sInfo));
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 			if (StrEqual(sInfo, "yes"))
 			{
 				RemoveFromGang(param1);
@@ -1401,7 +1401,7 @@ public int LeaveConfirmation_Callback(Handle hMenu, MenuAction action, int param
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
@@ -1417,33 +1417,33 @@ public int LeaveConfirmation_Callback(Handle hMenu, MenuAction action, int param
 
 void OpenAdministrationMenu(int client)
 {
-	Handle hMenu = CreateMenu(AdministrationMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-	SetMenuTitle(hMenu, "Gang Admin");
+	Menu menu = CreateMenu(AdministrationMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+	SetMenuTitle(menu, "Gang Admin");
 	char sDisplayString[128];
 	
-	AddMenuItem(hMenu, "kick", "Kick a member", (ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	AddMenuItem(menu, "kick", "Kick a member", (ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 	
 	Format(sDisplayString, sizeof(sDisplayString), "Rename Gang [%i Credits]", gcv_iRenamePrice.IntValue);
-	AddMenuItem(hMenu, "rename", sDisplayString, (ga_iRank[client] == GANGRANK_OWNER && GetClientCredits(client) >= gcv_iRenamePrice.IntValue)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "rename", sDisplayString, (ga_iRank[client] == GANGRANK_OWNER && GetClientCredits(client) >= gcv_iRenamePrice.IntValue)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 	
-	AddMenuItem(hMenu, "promote", "Promote a member", (ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	AddMenuItem(menu, "promote", "Promote a member", (ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 	
-	AddMenuItem(hMenu, "disband", "Disband gang", (ga_iRank[client] == GANGRANK_OWNER)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "disband", "Disband gang", (ga_iRank[client] == GANGRANK_OWNER)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 
 
-	SetMenuExitBackButton(hMenu, true);
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+	SetMenuExitBackButton(menu, true);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 
 }
 
-public int AdministrationMenu_Callback(Handle hMenu, MenuAction action, int param1, int param2)
+public int AdministrationMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_Select:
 		{
 			char sInfo[64];
-			GetMenuItem(hMenu, param2, sInfo, sizeof(sInfo));
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 			if (StrEqual(sInfo, "kick"))
 			{
 				OpenAdministrationKickMenu(param1);
@@ -1472,7 +1472,7 @@ public int AdministrationMenu_Callback(Handle hMenu, MenuAction action, int para
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
@@ -1511,8 +1511,8 @@ public void SQLCallback_AdministrationPromotionMenu(Handle hOwner, Handle hHndl,
 	}
 	else
 	{
-		Handle hMenu = CreateMenu(AdministrationPromoMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-		SetMenuTitle(hMenu, "Promote a player :");
+		Handle menu = CreateMenu(AdministrationPromoMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+		SetMenuTitle(menu, "Promote a player :");
 
 		while (SQL_FetchRow(hHndl))
 		{
@@ -1530,22 +1530,22 @@ public void SQLCallback_AdministrationPromotionMenu(Handle hOwner, Handle hHndl,
 				char sDisplayString[128];
 				Format(sInfoString, sizeof(sInfoString), "%s;%s;%i", sTempArray[0], sTempArray[1], StringToInt(sTempArray[2]));
 				Format(sDisplayString, sizeof(sDisplayString), "%s (%s)", sTempArray[1], sTempArray[0]);
-				AddMenuItem(hMenu, sInfoString, sDisplayString, (ga_iRank[client] == GANGRANK_OWNER)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+				AddMenuItem(menu, sInfoString, sDisplayString, (ga_iRank[client] == GANGRANK_OWNER)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 			}
 		}
-		SetMenuExitBackButton(hMenu, true);
-		DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+		SetMenuExitBackButton(menu, true);
+		DisplayMenu(menu, client, MENU_TIME_FOREVER);
 	}
 }
 
-public int AdministrationPromoMenu_CallBack(Handle hMenu, MenuAction action, int param1, int param2)
+public int AdministrationPromoMenu_CallBack(Handle menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_Select:
 		{
 			char sInfo[256];
-			GetMenuItem(hMenu, param2, sInfo, sizeof(sInfo));
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 
 			OpenPromoteDemoteMenu(param1, sInfo);
 		}
@@ -1555,7 +1555,7 @@ public int AdministrationPromoMenu_CallBack(Handle hMenu, MenuAction action, int
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
@@ -1567,30 +1567,30 @@ void OpenPromoteDemoteMenu(int client, const char[] sInfo)
 	char sTempArray[3][32];
 	ExplodeString(sInfo, ";", sTempArray, 3, 32);
 
-	Handle hMenu = CreateMenu(AdministrationPromoDemoteMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-	SetMenuTitle(hMenu, "Gang Members Ranks");
+	Handle menu = CreateMenu(AdministrationPromoDemoteMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+	SetMenuTitle(menu, "Gang Members Ranks");
 	char sInfoString[32];
 
-	AddMenuItem(hMenu, "", "Simply click on the desired rank to set", ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "", "Simply click on the desired rank to set", ITEMDRAW_DISABLED);
 	
 	Format(sInfoString, sizeof(sInfoString), "%s;normal", sTempArray[0]);
-	AddMenuItem(hMenu, sInfoString, "Normal", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	AddMenuItem(menu, sInfoString, "Normal", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 	Format(sInfoString, sizeof(sInfoString), "%s;admin", sTempArray[0]);
-	AddMenuItem(hMenu, sInfoString, "Admin", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	AddMenuItem(menu, sInfoString, "Admin", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-	SetMenuExitBackButton(hMenu, true);
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+	SetMenuExitBackButton(menu, true);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 }
 
-public int AdministrationPromoDemoteMenu_CallBack(Handle hMenu, MenuAction action, int param1, int param2)
+public int AdministrationPromoDemoteMenu_CallBack(Handle menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_Select:
 		{
 			char sInfo[256];
-			GetMenuItem(hMenu, param2, sInfo, sizeof(sInfo));
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 			char sTempArray[2][32];
 			ExplodeString(sInfo, ";", sTempArray, 2, 32);
 
@@ -1626,7 +1626,7 @@ public int AdministrationPromoDemoteMenu_CallBack(Handle hMenu, MenuAction actio
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
@@ -1648,28 +1648,28 @@ public int AdministrationPromoDemoteMenu_CallBack(Handle hMenu, MenuAction actio
 
 void OpenDisbandMenu(int client)
 {
-	Handle hMenu = CreateMenu(DisbandMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-	SetMenuTitle(hMenu, "Disband Gang");
+	Handle menu = CreateMenu(DisbandMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+	SetMenuTitle(menu, "Disband Gang");
 
-	AddMenuItem(hMenu, "", "Are you sure you want to disband your gang?", ITEMDRAW_DISABLED);
-	AddMenuItem(hMenu, "", "This change is PERMANENT", ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "", "Are you sure you want to disband your gang?", ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "", "This change is PERMANENT", ITEMDRAW_DISABLED);
 
-	AddMenuItem(hMenu, "disband", "Disband The Gang", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	AddMenuItem(menu, "disband", "Disband The Gang", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-	AddMenuItem(hMenu, "no", "Don't Disband The Gang", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	AddMenuItem(menu, "no", "Don't Disband The Gang", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-	SetMenuExitBackButton(hMenu, true);
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+	SetMenuExitBackButton(menu, true);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 }
 
-public int DisbandMenu_CallBack(Handle hMenu, MenuAction action, int param1, int param2)
+public int DisbandMenu_CallBack(Handle menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_Select:
 		{
 			char sInfo[256];
-			GetMenuItem(hMenu, param2, sInfo, sizeof(sInfo));
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 			if (StrEqual(sInfo, "disband"))
 			{
 				RemoveFromGang(param1);
@@ -1681,7 +1681,7 @@ public int DisbandMenu_CallBack(Handle hMenu, MenuAction action, int param1, int
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
@@ -1716,8 +1716,8 @@ public void SQLCallback_AdministrationKickMenu(Handle hOwner, Handle hHndl, cons
 	else
 	{
 
-		Handle hMenu = CreateMenu(AdministrationKickMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-		SetMenuTitle(hMenu, "Kick Gang Members");
+		Handle menu = CreateMenu(AdministrationKickMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+		SetMenuTitle(menu, "Kick Gang Members");
 
 		while (SQL_FetchRow(hHndl))
 		{
@@ -1732,27 +1732,32 @@ public void SQLCallback_AdministrationKickMenu(Handle hOwner, Handle hHndl, cons
 
 			Format(sInfoString, sizeof(sInfoString), "%s;%s", sTempArray[0], sTempArray[1]);
 			Format(sDisplayString, sizeof(sDisplayString), "%s (%s)", sTempArray[1], sTempArray[0]);
-			AddMenuItem(hMenu, sInfoString, sDisplayString, (ga_iRank[client] > StringToInt(sTempArray[2]))?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+			AddMenuItem(menu, sInfoString, sDisplayString, (ga_iRank[client] > StringToInt(sTempArray[2]))?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		}
-		SetMenuExitBackButton(hMenu, true);
-		DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+		SetMenuExitBackButton(menu, true);
+		DisplayMenu(menu, client, MENU_TIME_FOREVER);
 	}
 }
 
-public int AdministrationKickMenu_CallBack(Handle hMenu, MenuAction action, int param1, int param2)
+public int AdministrationKickMenu_CallBack(Handle menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_Select:
 		{
 			char sInfo[256];
-			GetMenuItem(hMenu, param2, sInfo, sizeof(sInfo));
 			char sTempArray[2][128];
-			ExplodeString(sInfo, ";", sTempArray, 2, 128);
 			char sQuery1[128];
+			
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
+			
+			ExplodeString(sInfo, ";", sTempArray, 2, 128);
+			
 			Format(sQuery1, sizeof(sQuery1), "DELETE FROM hl_gangs_players WHERE steamid = \"%s\"", sTempArray[0]);
 			SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery1);
+			
 			PrintToChatAll("%s \x04%s \x01 has been kicked from \x02%s", TAG, sTempArray[1], ga_sGangName[param1]);
+			
 			char sSteamID[64];
 			for (int i = 1; i <= MaxClients; i++)
 			{
@@ -1772,10 +1777,9 @@ public int AdministrationKickMenu_CallBack(Handle hMenu, MenuAction action, int 
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
-	return 0;
 }
 
 
@@ -1806,12 +1810,12 @@ public void SQL_Callback_TopMenu(Handle hOwner, Handle hHndl, const char[] sErro
 	}
 	else
 	{
-		Handle hMenu = CreateMenu(TopGangsMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
-		SetMenuTitle(hMenu, "Top Gangs");
+		Handle menu = CreateMenu(TopGangsMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
+		SetMenuTitle(menu, "Top Gangs");
 		if (SQL_GetRowCount(hHndl) == 0)
 		{
 			PrintToChat(client, "%s \x04There are no gangs created!", TAG);
-			delete hMenu;
+			delete menu;
 			return;
 		}
 		char sGangName[128];
@@ -1829,15 +1833,15 @@ public void SQL_Callback_TopMenu(Handle hOwner, Handle hHndl, const char[] sErro
 			
 			Format(sInfoString, sizeof(sInfoString), "%i;%s;%i", ga_iTempInt2[client], sGangName, SQL_FetchInt(hHndl, 2));
 
-			AddMenuItem(hMenu, sInfoString, sGangName);
+			AddMenuItem(menu, sInfoString, sGangName);
 		}
 
-		SetMenuExitBackButton(hMenu, true);
-		DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+		SetMenuExitBackButton(menu, true);
+		DisplayMenu(menu, client, MENU_TIME_FOREVER);
 	}
 }
 
-public int TopGangsMenu_Callback(Handle hMenu, MenuAction action, int param1, int param2)
+public int TopGangsMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -1846,7 +1850,7 @@ public int TopGangsMenu_Callback(Handle hMenu, MenuAction action, int param1, in
 			char sInfo[300];
 			char sQuery[300];
 			char sTempArray[3][128];
-			GetMenuItem(hMenu, param2, sInfo, sizeof(sInfo));
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 
 			ExplodeString(sInfo, ";", sTempArray, 3, sizeof(sTempArray[]));
 
@@ -1863,7 +1867,7 @@ public int TopGangsMenu_Callback(Handle hMenu, MenuAction action, int param1, in
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
@@ -1894,31 +1898,31 @@ public void SQL_Callback_GangStatistics(Handle hOwner, Handle hHndl, const char[
 		SQL_FetchString(hHndl, 2, sTempArray[1], sizeof(sTempArray[]));
 		int iDate = SQL_FetchInt(hHndl, 6);
 
-		Handle hMenu = CreateMenu(MenuCallback_Void, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
-		SetMenuTitle(hMenu, "Top Gangs");
+		Handle menu = CreateMenu(MenuCallback_Void, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
+		SetMenuTitle(menu, "Top Gangs");
 
 		Format(sDisplayString, sizeof(sDisplayString), "Gang Name : %s", sTempArray[0]);
-		AddMenuItem(hMenu, "", sDisplayString, ITEMDRAW_DISABLED);
+		AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
 
 		Format(sDisplayString, sizeof(sDisplayString), "Gang Rank : %i/%i", ga_iTempInt2[client], g_iGangAmmount);
-		AddMenuItem(hMenu, "", sDisplayString, ITEMDRAW_DISABLED);
+		AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
 
 		FormatTime(sFormattedTime, sizeof(sFormattedTime), "%x", iDate);
 		Format(sDisplayString, sizeof(sDisplayString), "Date Created : %s", sFormattedTime);
-		AddMenuItem(hMenu, "", sDisplayString, ITEMDRAW_DISABLED);
+		AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
 
 		Format(sDisplayString, sizeof(sDisplayString), "Created By : %s", sTempArray[1]);
-		AddMenuItem(hMenu, "", sDisplayString, ITEMDRAW_DISABLED);
+		AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
 
 		Format(sDisplayString, sizeof(sDisplayString), "CT Kills : %i ", ga_iTempInt[client]);
-		AddMenuItem(hMenu, "", sDisplayString, ITEMDRAW_DISABLED);
+		AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
 
-		SetMenuExitBackButton(hMenu, true);
-		DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+		SetMenuExitBackButton(menu, true);
+		DisplayMenu(menu, client, MENU_TIME_FOREVER);
 	}
 }
 
-public int MenuCallback_Void (Handle hMenu, MenuAction action, int param1, int param2)
+public int MenuCallback_Void(Handle menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -1932,14 +1936,14 @@ public int MenuCallback_Void (Handle hMenu, MenuAction action, int param1, int p
 		}
 		case MenuAction_End:
 		{
-			CloseHandle(hMenu);
+			delete menu;
 		}
 	}
 	return 0;
 }
 
 /*****************************************************************
-***********************  PLUGIN STOCKS  **************************
+***********************  HELPER FUNCTIONS  ***********************
 ******************************************************************/
 
 
