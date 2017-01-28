@@ -84,7 +84,7 @@ bool g_bLateLoad = false;
 bool ga_bLoaded[MAXPLAYERS + 1] = {false, ...};
 
 /* Database Globals */
-Handle g_hDatabase = INVALID_HANDLE;
+Database g_hDatabase = null;
 char g_sDatabaseName[60];
 
 public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_max)
@@ -198,7 +198,7 @@ public void OnConfigsExecuted()
 {
 	if (gcv_bPluginEnabled.BoolValue)
 	{
-		if (g_hDatabase == INVALID_HANDLE)
+		if (g_hDatabase == null)
 		{
 			SetDBHandle();
 		}
@@ -375,29 +375,25 @@ public Action Event_PlayerDeath(Handle hEvent, const char[] sName, bool bDontBro
 				}
 			}
 			
-			SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery);
+			g_hDatabase.Query(SQLCallback_Void, sQuery);
 		}
 	}
 }
 
 /* SQL Callback On First Connection */
-public void SQLCallback_Connect(Handle hOwner, Handle hHndl, const char[] sError, any data)
+public void SQLCallback_Connect(Database db, const char[] error, any data)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (db == null)
 	{
 		SetDBHandle();
 	}
 	else
 	{
-		g_hDatabase = hHndl;
-		char sDriver[64];
-		
-		SQL_ReadDriver(g_hDatabase, sDriver, 64);
-		
+		g_hDatabase = db;		
 
-		SQL_TQuery(g_hDatabase, SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_players` (`id` int(20) NOT NULL AUTO_INCREMENT, `steamid` varchar(32) NOT NULL, `playername` varchar(32) NOT NULL, `gang` varchar(32) NOT NULL, `rank` int(16) NOT NULL, `invitedby` varchar(32) NOT NULL, `date` int(32) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
-		SQL_TQuery(g_hDatabase, SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_groups` (`id` int(20) NOT NULL AUTO_INCREMENT, `gang` varchar(32) NOT NULL, `health` int(16) NOT NULL, `damage` int(16) NOT NULL, `gravity` int(16) NOT NULL, `speed` int(16) NOT NULL, `size` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
-		SQL_TQuery(g_hDatabase, SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_statistics` (`id` int(20) NOT NULL AUTO_INCREMENT, `gang` varchar(32) NOT NULL, `ctkills` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
+		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_players` (`id` int(20) NOT NULL AUTO_INCREMENT, `steamid` varchar(32) NOT NULL, `playername` varchar(32) NOT NULL, `gang` varchar(32) NOT NULL, `rank` int(16) NOT NULL, `invitedby` varchar(32) NOT NULL, `date` int(32) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
+		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_groups` (`id` int(20) NOT NULL AUTO_INCREMENT, `gang` varchar(32) NOT NULL, `health` int(16) NOT NULL, `damage` int(16) NOT NULL, `gravity` int(16) NOT NULL, `speed` int(16) NOT NULL, `size` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
+		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_statistics` (`id` int(20) NOT NULL AUTO_INCREMENT, `gang` varchar(32) NOT NULL, `ctkills` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
 	}
 }
 
@@ -416,7 +412,7 @@ void LoadSteamID(int client)
 			CreateTimer(10.0, RefreshSteamID, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 		}
 		
-		if (g_hDatabase == INVALID_HANDLE) //connect not loaded - retry to give it time
+		if (g_hDatabase == null) //connect not loaded - retry to give it time
 		{
 			CreateTimer(1.0, RepeatCheckRank, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 		}
@@ -424,33 +420,34 @@ void LoadSteamID(int client)
 		{
 			char sQuery[300];
 			Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_players WHERE steamid=\"%s\"", ga_sSteamID[client]);
-			SQL_TQuery(g_hDatabase, SQLCallback_CheckSQL_Player, sQuery, GetClientUserId(client));
+			g_hDatabase.Query(SQLCallback_CheckSQL_Player, sQuery, GetClientUserId(client));
 		}
 	}
 }
 
-public void SQLCallback_CheckSQL_Player(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
+public void SQLCallback_CheckSQL_Player(Database db, DBResultSet results, const char[] error, int data)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (db == null)
 	{
 		SetDBHandle();
 	}
 	
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
 		return;
 	}
 	else 
 	{
-		if (SQL_GetRowCount(hHndl) == 1)
+		if (results.RowCount == 1)
 		{
-			SQL_FetchRow(hHndl);
+			results.FetchRow();
 
-			SQL_FetchString(hHndl, 3, ga_sGangName[client], sizeof(ga_sGangName[]));
-			ga_iRank[client] = SQL_FetchInt(hHndl, 4);
-			SQL_FetchString(hHndl, 5, ga_sInvitedBy[client], sizeof(ga_sInvitedBy[]));
-			ga_iDateJoined[client] = SQL_FetchInt(hHndl, 6);
+			results.FetchString(3, ga_sGangName[client], sizeof(ga_sGangName[]));
+			ga_iRank[client] = results.FetchInt(4);
+			results.FetchString(5, ga_sInvitedBy[client], sizeof(ga_sInvitedBy[]));
+			ga_iDateJoined[client] = results.FetchInt(6);
+			
 			ga_bIsPlayerInDatabase[client] = true;
 			ga_bHasGang[client] = true;
 			ga_bLoaded[client] = true;
@@ -463,17 +460,17 @@ public void SQLCallback_CheckSQL_Player(Handle hOwner, Handle hHndl, const char[
 
 			char sQuery_2[300];
 			Format(sQuery_2, sizeof(sQuery_2), "SELECT * FROM hl_gangs_groups WHERE gang=\"%s\"", ga_sGangName[client]);
-			SQL_TQuery(g_hDatabase, SQLCallback_CheckSQL_Groups, sQuery_2, GetClientUserId(client));
+			g_hDatabase.Query(SQLCallback_CheckSQL_Groups, sQuery_2, GetClientUserId(client));
 		}
 		else
 		{
-			if (SQL_GetRowCount(hHndl) > 1)
+			if (results.RowCount > 1)
 			{
 				LogError("Player %L has multiple entries under their ID. Running script to clean up duplicates and keep original entry (oldest)", client);
 				DeleteDuplicates();
 				CreateTimer(20.0, RepeatCheckRank, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 			}
-			else if (g_hDatabase == INVALID_HANDLE)
+			else if (g_hDatabase == null)
 			{
 				CreateTimer(2.0, RepeatCheckRank, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 			}
@@ -488,7 +485,7 @@ public void SQLCallback_CheckSQL_Player(Handle hOwner, Handle hHndl, const char[
 
 public void SQLCallback_CheckSQL_Groups(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (hHndl == null)
 	{
 		SetDBHandle();
 	}
@@ -512,19 +509,19 @@ public void SQLCallback_CheckSQL_Groups(Handle hOwner, Handle hHndl, const char[
 
 			char sQuery[300];
 			Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_statistics WHERE gang=\"%s\"", ga_sGangName[client]);
-			SQL_TQuery(g_hDatabase, SQL_Callback_CTKills, sQuery, GetClientUserId(client));
+			g_hDatabase.Query(SQL_Callback_CTKills, sQuery, GetClientUserId(client));
 		}
 	}
 }
 
-public void SQL_Callback_CTKills(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
+public void SQL_Callback_CTKills(Database db, DBResultSet results, const char[] error, int data)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (db == null)
 	{
 		SetDBHandle();
 	}
 	
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
 		return;
@@ -532,9 +529,9 @@ public void SQL_Callback_CTKills(Handle hOwner, Handle hHndl, const char[] sErro
 	else 
 	{
 		
-		if (SQL_GetRowCount(hHndl) == 1 && SQL_FetchRow(hHndl))
+		if (results.RowCount == 1 && results.FetchRow())
 		{
-			ga_iCTKills[client] = SQL_FetchInt(hHndl, 2);
+			ga_iCTKills[client] = results.FetchInt(2);
 		}
 
 	}
@@ -547,11 +544,11 @@ public Action RepeatCheckRank(Handle hTimer, int iUserID)
 	LoadSteamID(client);
 }
 
-public void SQLCallback_Void(Handle hOwner, Handle hHndl, const char[] sError, int data)
+public void SQLCallback_Void(Database db, DBResultSet results, const char[] error, int data)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (db == null)
 	{
-		LogError("Error (%i): %s", data, sError);
+		LogError("Error (%i): %s", data, error);
 	}
 }
 
@@ -644,7 +641,7 @@ void StartOpeningGangMenu(int client)
 	{
 		char sQuery[300];
 		Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_players WHERE gang = \"%s\"", ga_sGangName[client]);
-		SQL_TQuery(g_hDatabase, SQLCallback_OpenGangMenu, sQuery, GetClientUserId(client));
+		g_hDatabase.Query(SQLCallback_OpenGangMenu, sQuery, GetClientUserId(client));
 	}
 	else
 	{
@@ -655,7 +652,7 @@ void StartOpeningGangMenu(int client)
 public void SQLCallback_OpenGangMenu(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
 {
 
-	if (hHndl == INVALID_HANDLE)
+	if (hHndl == null)
 	{
 		SetDBHandle();
 	}
@@ -804,7 +801,7 @@ public Action OnSay(int client, const char[] command, int args)
 
 		char sQuery[300];
 		Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_groups WHERE gang=\"%s\"", sText);
-		SQL_TQuery(g_hDatabase, SQL_Callback_CheckName, sQuery, hDatapack);
+		g_hDatabase.Query(SQL_Callback_CheckName, sQuery, hDatapack);
 
 		return Plugin_Handled;
 	}
@@ -830,23 +827,23 @@ public Action OnSay(int client, const char[] command, int args)
 		WritePackString(hDatapack, sText);
 		ResetPack(hDatapack);
 
-		SQL_TQuery(g_hDatabase, SQL_Callback_CheckName, sQuery, hDatapack);
+		g_hDatabase.Query(SQL_Callback_CheckName, sQuery, hDatapack);
 
 		return Plugin_Handled;
 	}
 	return Plugin_Continue;
 }
 
-public void SQL_Callback_CheckName(Handle hOwner, Handle hHndl, const char[] sError, Handle hDatapack)
+public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[] error, Handle data)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (db == null)
 	{
 		SetDBHandle();
 	}
 	char sText[64];
-	int client = ReadPackCell(hDatapack);
-	ReadPackString(hDatapack, sText, sizeof(sText));
-	delete hDatapack;
+	int client = ReadPackCell(data);
+	ReadPackString(data, sText, sizeof(sText));
+	delete data;
 
 	if (!IsValidClient(client))
 	{
@@ -856,7 +853,7 @@ public void SQL_Callback_CheckName(Handle hOwner, Handle hHndl, const char[] sEr
 	{
 		if (ga_bSetName[client])
 		{
-			if (SQL_GetRowCount(hHndl) == 0)
+			if (results.RowCount == 0)
 			{
 
 				strcopy(ga_sGangName[client], sizeof(ga_sGangName[]), sText);
@@ -888,7 +885,7 @@ public void SQL_Callback_CheckName(Handle hOwner, Handle hHndl, const char[] sEr
 		}
 		else if (ga_bRename[client])
 		{
-			if (SQL_GetRowCount(hHndl) == 0)
+			if (results.RowCount == 0)
 			{
 
 				char sOldName[32];
@@ -904,15 +901,15 @@ public void SQL_Callback_CheckName(Handle hOwner, Handle hHndl, const char[] sEr
 				char sQuery[300];
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_players SET gang=\"%s\" WHERE gang=\"%s\"", sText, sOldName);
 
-				SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery);
+				g_hDatabase.Query(SQLCallback_Void, sQuery);
 
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET gang=\"%s\" WHERE gang=\"%s\"", sText, sOldName);
 
-				SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery);
+				g_hDatabase.Query(SQLCallback_Void, sQuery);
 		
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_statistics SET gang=\"%s\" WHERE gang=\"%s\"", sText, sOldName);
 
-				SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery);
+				g_hDatabase.Query(SQLCallback_Void, sQuery);
 
 				PrintToChatAll("%s \x04%N\x01 has changed the name of \x04%s\x01 to \x04%s", TAG, client, sOldName, sText);
 
@@ -946,17 +943,17 @@ void StartOpeningMembersMenu(int client)
 		char sQuery[300];
 		Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_players WHERE gang=\"%s\"", ga_sGangName[client]);
 
-		SQL_TQuery(g_hDatabase, SQLCallback_OpenMembersMenu, sQuery, GetClientUserId(client));
+		g_hDatabase.Query(SQLCallback_OpenMembersMenu, sQuery, GetClientUserId(client));
 	}
 }
 
-public void SQLCallback_OpenMembersMenu(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
+public void SQLCallback_OpenMembersMenu(Database db, DBResultSet results, const char[] error, int data)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (db == null)
 	{
 		SetDBHandle();
 	}
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
 		return;
@@ -967,14 +964,14 @@ public void SQLCallback_OpenMembersMenu(Handle hOwner, Handle hHndl, const char[
 		Handle menu = CreateMenu(MemberListMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
 		SetMenuTitle(menu, "Member List :");
 
-		while (SQL_FetchRow(hHndl))
+		while (results.FetchRow())
 		{
 			char a_sTempArray[5][128]; // 0 - SteamID | 1 - Name | 2 - Invited By | 3 - Rank | 4 - Date (UTF)
-			SQL_FetchString(hHndl, 1, a_sTempArray[0], sizeof(a_sTempArray[])); // Steam-ID
-			SQL_FetchString(hHndl, 2, a_sTempArray[1], sizeof(a_sTempArray[])); // Player Name
-			SQL_FetchString(hHndl, 5, a_sTempArray[2], sizeof(a_sTempArray[])); // Invited By
-			IntToString(SQL_FetchInt(hHndl, 4), a_sTempArray[3], sizeof(a_sTempArray[])); // Rank
-			IntToString(SQL_FetchInt(hHndl, 6), a_sTempArray[4], sizeof(a_sTempArray[])); // Date
+			results.FetchString(1, a_sTempArray[0], sizeof(a_sTempArray[])); // Steam-ID
+			results.FetchString(2, a_sTempArray[1], sizeof(a_sTempArray[])); // Player Name
+			results.FetchString(5, a_sTempArray[2], sizeof(a_sTempArray[])); // Invited By
+			IntToString(results.FetchInt(4), a_sTempArray[3], sizeof(a_sTempArray[])); // Rank
+			IntToString(results.FetchInt(6), a_sTempArray[4], sizeof(a_sTempArray[])); // Date
 
 
 			char sInfoString[128];
@@ -1234,18 +1231,18 @@ public void StartOpeningPerkMenu(int client)
 	{
 		char sQuery[300];
 		Format(sQuery, sizeof(sQuery), "SELECT health, damage, gravity, speed, size FROM hl_gangs_groups WHERE gang=\"%s\"", ga_sGangName[client]);
-		SQL_TQuery(g_hDatabase, SQLCallback_Perks, sQuery, GetClientUserId(client));
+		g_hDatabase.Query(SQLCallback_Perks, sQuery, GetClientUserId(client));
 	}
 }
 
-public void SQLCallback_Perks(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
+public void SQLCallback_Perks(Database db, DBResultSet results, const char[] error, int data)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (db == null)
 	{
 		SetDBHandle();
 	}
 	
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 	
 	if (!IsValidClient(client))
 	{
@@ -1255,13 +1252,13 @@ public void SQLCallback_Perks(Handle hOwner, Handle hHndl, const char[] sError, 
 	{
 		Handle menu = CreateMenu(PerksMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
 		SetMenuTitle(menu, "Gang Perks");
-		if (SQL_GetRowCount(hHndl) == 1 && SQL_FetchRow(hHndl))
+		if (results.RowCount == 1 && results.FetchRow())
 		{
-			ga_iHealth[client] = SQL_FetchInt(hHndl, 0); // Health
-			ga_iDamage[client] = SQL_FetchInt(hHndl, 1); // Damage
-			ga_iGravity[client] = SQL_FetchInt(hHndl, 2); // Gravity
-			ga_iSpeed[client] = SQL_FetchInt(hHndl, 3); // Speed
-			ga_iSize[client] = SQL_FetchInt(hHndl, 4);
+			ga_iHealth[client] = results.FetchInt(0); // Health
+			ga_iDamage[client] = results.FetchInt(1); // Damage
+			ga_iGravity[client] = results.FetchInt(2); // Gravity
+			ga_iSpeed[client] = results.FetchInt(3); // Speed
+			ga_iSize[client] = results.FetchInt(4);
 		}
 		
 		char sDisplayBuffer[64];
@@ -1336,7 +1333,7 @@ public int PerksMenu_CallBack(Handle menu, MenuAction action, int param1, int pa
 				++ga_iSize[param1];
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET size=%i WHERE gang=\"%s\"", ga_iSize[param1], ga_sGangName[param1]);
 			}
-			SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery, GetClientUserId(param1));
+			g_hDatabase.Query(SQLCallback_Void, sQuery, GetClientUserId(param1));
 			
 			StartOpeningPerkMenu(param1);
 		}
@@ -1494,17 +1491,17 @@ void OpenAdministrationPromotionMenu(int client)
 		char sQuery[200];
 		Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_players WHERE gang=\"%s\"", ga_sGangName[client]);
 
-		SQL_TQuery(g_hDatabase, SQLCallback_AdministrationPromotionMenu, sQuery, GetClientUserId(client));
+		g_hDatabase.Query(SQLCallback_AdministrationPromotionMenu, sQuery, GetClientUserId(client));
 	}
 }
 
-public void SQLCallback_AdministrationPromotionMenu(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
+public void SQLCallback_AdministrationPromotionMenu(Database db, DBResultSet results, const char[] error, int data)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (db == null)
 	{
 		SetDBHandle();
 	}
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
 		return;
@@ -1514,12 +1511,12 @@ public void SQLCallback_AdministrationPromotionMenu(Handle hOwner, Handle hHndl,
 		Handle menu = CreateMenu(AdministrationPromoMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
 		SetMenuTitle(menu, "Promote a player :");
 
-		while (SQL_FetchRow(hHndl))
+		while (results.FetchRow())
 		{
 			char sTempArray[3][128]; // 0 - SteamID | 1 - Name | 2 - Invited By | 3 - Rank | 4 - Date (UTF)
-			SQL_FetchString(hHndl, 1, sTempArray[0], sizeof(sTempArray[])); // Steam-ID
-			SQL_FetchString(hHndl, 2, sTempArray[1], sizeof(sTempArray[])); // Player Name
-			IntToString(SQL_FetchInt(hHndl, 4), sTempArray[2], sizeof(sTempArray[])); // Rank
+			results.FetchString(1, sTempArray[0], sizeof(sTempArray[])); // Steam-ID
+			results.FetchString(2, sTempArray[1], sizeof(sTempArray[])); // Player Name
+			IntToString(results.FetchInt(4), sTempArray[2], sizeof(sTempArray[])); // Rank
 
 			char sSteamID[34];
 			GetClientAuthId(client, AuthId_Steam2, sSteamID, sizeof(sSteamID));
@@ -1605,7 +1602,7 @@ public int AdministrationPromoDemoteMenu_CallBack(Handle menu, MenuAction action
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_players SET rank=1 WHERE steamid=\"%s\"", sTempArray[0]);
 			}
 			
-			SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery);
+			g_hDatabase.Query(SQLCallback_Void, sQuery);
 			char sSteamID[32];
 			for (int i = 1; i <= MaxClients; i++)
 			{
@@ -1698,17 +1695,17 @@ void OpenAdministrationKickMenu(int client)
 		char sQuery[200];
 		Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_players WHERE gang=\"%s\"", ga_sGangName[client]);
 
-		SQL_TQuery(g_hDatabase, SQLCallback_AdministrationKickMenu, sQuery, GetClientUserId(client));
+		g_hDatabase.Query(SQLCallback_AdministrationKickMenu, sQuery, GetClientUserId(client));
 	}
 }
 
-public void SQLCallback_AdministrationKickMenu(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
+public void SQLCallback_AdministrationKickMenu(Database db, DBResultSet results, const char[] error, int data)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (db == null)
 	{
 		SetDBHandle();
 	}
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
 		return;
@@ -1719,12 +1716,12 @@ public void SQLCallback_AdministrationKickMenu(Handle hOwner, Handle hHndl, cons
 		Handle menu = CreateMenu(AdministrationKickMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
 		SetMenuTitle(menu, "Kick Gang Members");
 
-		while (SQL_FetchRow(hHndl))
+		while (results.FetchRow())
 		{
 			char sTempArray[3][128]; // 0 - SteamID | 1 - Name | 2 - Invited By | 3 - Rank | 4 - Date (UTF)
-			SQL_FetchString(hHndl, 1, sTempArray[0], sizeof(sTempArray[])); // Steam-ID
-			SQL_FetchString(hHndl, 2, sTempArray[1], sizeof(sTempArray[])); // Player Name
-			IntToString(SQL_FetchInt(hHndl, 4), sTempArray[2], sizeof(sTempArray[])); // Rank
+			results.FetchString(1, sTempArray[0], sizeof(sTempArray[])); // Steam-ID
+			results.FetchString(2, sTempArray[1], sizeof(sTempArray[])); // Player Name
+			IntToString(results.FetchInt(4), sTempArray[2], sizeof(sTempArray[])); // Rank
 
 			
 			char sInfoString[128];
@@ -1754,7 +1751,7 @@ public int AdministrationKickMenu_CallBack(Handle menu, MenuAction action, int p
 			ExplodeString(sInfo, ";", sTempArray, 2, 128);
 			
 			Format(sQuery1, sizeof(sQuery1), "DELETE FROM hl_gangs_players WHERE steamid = \"%s\"", sTempArray[0]);
-			SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery1);
+			g_hDatabase.Query(SQLCallback_Void, sQuery1);
 			
 			PrintToChatAll("%s \x04%s \x01 has been kicked from \x02%s", TAG, sTempArray[1], ga_sGangName[param1]);
 			
@@ -1789,21 +1786,21 @@ public int AdministrationKickMenu_CallBack(Handle menu, MenuAction action, int p
 
 
 
-public void StartOpeningTopGangsMenu(int client)
+void StartOpeningTopGangsMenu(int client)
 {
 	if (IsValidClient(client))
 	{
-		SQL_TQuery(g_hDatabase, SQL_Callback_TopMenu, "SELECT * FROM hl_gangs_statistics ORDER BY ctkills DESC", GetClientUserId(client));
+		g_hDatabase.Query(SQL_Callback_TopMenu, "SELECT * FROM hl_gangs_statistics ORDER BY ctkills DESC", GetClientUserId(client));
 	}
 }
 
-public void SQL_Callback_TopMenu(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
+public void SQL_Callback_TopMenu(Database db, DBResultSet results, const char[] error, int data)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (db == null)
 	{
 		SetDBHandle();
 	}
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
 		return;
@@ -1812,9 +1809,10 @@ public void SQL_Callback_TopMenu(Handle hOwner, Handle hHndl, const char[] sErro
 	{
 		Handle menu = CreateMenu(TopGangsMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
 		SetMenuTitle(menu, "Top Gangs");
-		if (SQL_GetRowCount(hHndl) == 0)
+		if (results.RowCount == 0)
 		{
 			PrintToChat(client, "%s \x04There are no gangs created!", TAG);
+			
 			delete menu;
 			return;
 		}
@@ -1824,14 +1822,14 @@ public void SQL_Callback_TopMenu(Handle hOwner, Handle hHndl, const char[] sErro
 		
 		ga_iTempInt2[client] = 0;
 		g_iGangAmmount = 0;
-		while (SQL_FetchRow(hHndl))
+		while (results.FetchRow())
 		{
 			g_iGangAmmount++;
 			ga_iTempInt2[client]++;
 			
-			SQL_FetchString(hHndl, 1, sGangName, sizeof(sGangName));
+			results.FetchString(1, sGangName, sizeof(sGangName));
 			
-			Format(sInfoString, sizeof(sInfoString), "%i;%s;%i", ga_iTempInt2[client], sGangName, SQL_FetchInt(hHndl, 2));
+			Format(sInfoString, sizeof(sInfoString), "%i;%s;%i", ga_iTempInt2[client], sGangName, results.FetchInt(2));
 
 			AddMenuItem(menu, sInfoString, sGangName);
 		}
@@ -1858,7 +1856,7 @@ public int TopGangsMenu_Callback(Menu menu, MenuAction action, int param1, int p
 			ga_iTempInt[param1] = StringToInt(sTempArray[2]);
 			
 			Format(sQuery, sizeof(sQuery), "SELECT * FROM `hl_gangs_players` WHERE `gang` = \"%s\" AND `rank` = 2", sTempArray[1]);
-			SQL_TQuery(g_hDatabase, SQL_Callback_GangStatistics, sQuery, GetClientUserId(param1));
+			g_hDatabase.Query(SQL_Callback_GangStatistics, sQuery, GetClientUserId(param1));
 
 		}
 		case MenuAction_Cancel:
@@ -1874,13 +1872,13 @@ public int TopGangsMenu_Callback(Menu menu, MenuAction action, int param1, int p
 }
 
 
-public void SQL_Callback_GangStatistics(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
+public void SQL_Callback_GangStatistics(Database db, DBResultSet results, const char[] error, int data)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (db == null)
 	{
 		SetDBHandle();
 	}
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
 		return;
@@ -1891,12 +1889,12 @@ public void SQL_Callback_GangStatistics(Handle hOwner, Handle hHndl, const char[
 		char sFormattedTime[64];
 		char sDisplayString[128];
 		
-		SQL_FetchRow(hHndl);
+		results.FetchRow();
 
 
-		SQL_FetchString(hHndl, 3, sTempArray[0], sizeof(sTempArray[]));
-		SQL_FetchString(hHndl, 2, sTempArray[1], sizeof(sTempArray[]));
-		int iDate = SQL_FetchInt(hHndl, 6);
+		results.FetchString(3, sTempArray[0], sizeof(sTempArray[]));
+		results.FetchString(2, sTempArray[1], sizeof(sTempArray[]));
+		int iDate = results.FetchInt(6);
 
 		Handle menu = CreateMenu(MenuCallback_Void, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
 		SetMenuTitle(menu, "Top Gangs");
@@ -1954,24 +1952,24 @@ void UpdateSQL(int client)
 		char sQuery[300];
 		Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_players WHERE steamid=\"%s\"", ga_sSteamID[client]);
 
-		SQL_TQuery(g_hDatabase, SQLCallback_CheckIfInDatabase_Player, sQuery, GetClientUserId(client));
+		g_hDatabase.Query(SQLCallback_CheckIfInDatabase_Player, sQuery, GetClientUserId(client));
 	}
 }
 
-public void SQLCallback_CheckIfInDatabase_Player(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
+public void SQLCallback_CheckIfInDatabase_Player(Database db, DBResultSet results, const char[] error, int data)
 {
-	if (hHndl == INVALID_HANDLE)
+	if (db == null)
 	{
 		SetDBHandle();
 	}
 
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 
 	if (!IsValidClient(client))
 	{
 		return;
 	}
-	if (SQL_GetRowCount(hHndl) == 0)
+	if (results.RowCount == 0)
 	{
 		ga_bIsPlayerInDatabase[client] = false;
 	}
@@ -1988,19 +1986,19 @@ public void SQLCallback_CheckIfInDatabase_Player(Handle hOwner, Handle hHndl, co
 	{
 		Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_players SET gang=\"%s\",invitedby=\"%s\",playername=\"%N\",rank=%i,date=%i WHERE steamid=\"%s\"", ga_sGangName[client], ga_sInvitedBy[client], client, ga_iRank[client], ga_iDateJoined[client], ga_sSteamID[client]);
 	}
-	SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery);
+	g_hDatabase.Query(SQLCallback_Void, sQuery);
 	
 	char sQuery2[128];
 
 	Format(sQuery2, sizeof(sQuery2), "SELECT * FROM hl_gangs_groups WHERE gang=\"%s\"", ga_sGangName[client]);
 	
-	SQL_TQuery(g_hDatabase, SQLCALLBACK_GROUPS, sQuery2, GetClientUserId(client));
+	g_hDatabase.Query(SQLCALLBACK_GROUPS, sQuery2, GetClientUserId(client));
 
 }
 public void SQLCALLBACK_GROUPS(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
 {
 
-	if (hHndl == INVALID_HANDLE)
+	if (hHndl == null)
 	{
 		SetDBHandle();
 	}
@@ -2032,10 +2030,10 @@ public void SQLCALLBACK_GROUPS(Handle hOwner, Handle hHndl, const char[] sError,
 
 	}
 
-	SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery);
+	g_hDatabase.Query(SQLCallback_Void, sQuery);
 
 	Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_statistics WHERE gang = \"%s\"", ga_sGangName[client]);
-	SQL_TQuery(g_hDatabase, SQL_Callback_LoadStatistics, sQuery, GetClientUserId(client));
+	g_hDatabase.Query(SQL_Callback_LoadStatistics, sQuery, GetClientUserId(client));
 
 }
 
@@ -2043,7 +2041,7 @@ public void SQLCALLBACK_GROUPS(Handle hOwner, Handle hHndl, const char[] sError,
 public void SQL_Callback_LoadStatistics(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
 {
 
-	if (hHndl == INVALID_HANDLE)
+	if (hHndl == null)
 	{
 		SetDBHandle();
 	}
@@ -2074,24 +2072,24 @@ public void SQL_Callback_LoadStatistics(Handle hOwner, Handle hHndl, const char[
 		Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_statistics SET ctkills=%i WHERE gang=\"%s\"", ga_iCTKills[client], ga_sGangName[client]);
 	}
 
-	SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery);
+	g_hDatabase.Query(SQLCallback_Void, sQuery);
 
 }
 
 void SetDBHandle()
 {
-	if (g_hDatabase == INVALID_HANDLE)
+	if (g_hDatabase == null)
 	{
 		gcv_sDatabase.GetString(g_sDatabaseName, sizeof(g_sDatabaseName));
-		SQL_TConnect(SQLCallback_Connect, g_sDatabaseName);
+		Database.Connect(SQLCallback_Connect, g_sDatabaseName);
 	}
 }
 
 void DeleteDuplicates()
 {
-	if (g_hDatabase != INVALID_HANDLE)
+	if (g_hDatabase != null)
 	{
-		SQL_TQuery(g_hDatabase, SQLCallback_Void, "delete hl_gangs_players from hl_gangs_players inner join (select min(id) minid, steamid from hl_gangs_players group by steamid having count(1) > 1) as duplicates on (duplicates.steamid = hl_gangs_players.steamid and duplicates.minid <> hl_gangs_players.id)", 4);
+		g_hDatabase.Query(SQLCallback_Void, "delete hl_gangs_players from hl_gangs_players inner join (select min(id) minid, steamid from hl_gangs_players group by steamid having count(1) > 1) as duplicates on (duplicates.steamid = hl_gangs_players.steamid and duplicates.minid <> hl_gangs_players.id)", 4);
 	}
 }
 
@@ -2116,9 +2114,9 @@ void RemoveFromGang(int client)
 		Format(sQuery2, sizeof(sQuery2), "DELETE FROM hl_gangs_groups WHERE gang = \"%s\"", ga_sGangName[client]);
 		Format(sQuery3, sizeof(sQuery2), "DELETE FROM hl_gangs_statistics WHERE gang = \"%s\"", ga_sGangName[client]);
 
-		SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery1);
-		SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery2);
-		SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery3);
+		g_hDatabase.Query(SQLCallback_Void, sQuery1);
+		g_hDatabase.Query(SQLCallback_Void, sQuery2);
+		g_hDatabase.Query(SQLCallback_Void, sQuery3);
 		PrintToChatAll("%s \x04%N\x01 has disbanded \x02%s", TAG, client, ga_sGangName[client]);
 		for (int i = 1; i <= MaxClients; i++)
 		{
@@ -2133,7 +2131,7 @@ void RemoveFromGang(int client)
 	{
 		char sQuery1[128];
 		Format(sQuery1, sizeof(sQuery1), "DELETE FROM hl_gangs_players WHERE steamid = \"%s\"", ga_sSteamID[client]);
-		SQL_TQuery(g_hDatabase, SQLCallback_Void, sQuery1);
+		g_hDatabase.Query(SQLCallback_Void, sQuery1);
 		PrintToChatAll("%s \x04%N\x01 has left \x02%s", TAG, client, ga_sGangName[client]);
 		ResetVariables(client);
 	}
