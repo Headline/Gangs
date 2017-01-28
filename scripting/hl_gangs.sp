@@ -1,11 +1,29 @@
+/*  [CS:GO] Jailbreak Gangs
+ *
+ *  Copyright (C) 2016 Michael Flaherty // michaelwflaherty.com // michaelwflaherty@me.com
+ * 
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) 
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT 
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with 
+ * this program. If not, see http://www.gnu.org/licenses/.
+ */
+ 
 #include <sourcemod>
-#include <autoexecconfig>
-#include <cstrike>
 #include <sdkhooks>
-#include <hl_jailbreakshop>
+#include <cstrike>
 #include <smlib>
+#include <autoexecconfig>
 #include <hl_gangs>
-#include <togservervalidation>
+
+#define REQUIRE_PLUGIN
+#include <store>
 
 #define PLUGIN_VERSION "1.0b"
 #define TAG " \x03[Gangs]\x01"
@@ -21,7 +39,6 @@
 
 /* ConVars */
 ConVar gcv_bPluginEnabled;
-ConVar gcv_bDebug;
 ConVar gcv_sDatabase;
 ConVar gcv_iMaxGangSize;
 ConVar gcv_bInviteStyle;
@@ -81,7 +98,7 @@ public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_
 }
 
 
-public int Native_GetDmgModifier(Handle hPlugin, int numParams)
+public int Native_GetDmgModifier(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	
@@ -100,7 +117,6 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	ValidateServer();
 	LoadTranslations("core.phrases");
 	LoadTranslations("common.phrases");
 	
@@ -109,9 +125,7 @@ public void OnPluginStart()
 	AutoExecConfig_CreateConVar("hl_gangs_version", PLUGIN_VERSION, "Headline's Gangs Plugin : Version", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 		
 	gcv_bPluginEnabled = AutoExecConfig_CreateConVar("hl_gangs_enabled", "1", "Enable the plugin? (1 = Yes, 0 = No)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-	
-	gcv_bDebug = AutoExecConfig_CreateConVar("hl_gangs_debug", "0", "Enable debug logging? (1 = Yes, 0 = No)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-	
+		
 	gcv_bInviteStyle = AutoExecConfig_CreateConVar("hl_gangs_invite_style", "1", "Set invite style to pop up a Menu? \n      (1 = Menu, 0 = Registered Command)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
 	gcv_sDatabase = AutoExecConfig_CreateConVar("hl_gangs_database_name", "hl_gangs", "Name of the database for the plugin.");
@@ -153,14 +167,11 @@ public void OnPluginStart()
 	AddCommandListener(OnSay, "say"); 
 	AddCommandListener(OnSay, "say_team");
 
-	if(g_bLateLoad)
+	for(int i = 1; i <= MaxClients; i++)
 	{
-		for(int i = 1; i <= MaxClients; i++)
+		if(IsValidClient(i))
 		{
-			if(IsValidClient(i))
-			{
-				OnClientPutInServer(i);
-			}
+			OnClientPutInServer(i);
 		}
 	}
 }
@@ -180,11 +191,6 @@ public void OnClientDisconnect(int client)
 		UpdateSQL(client);
 		
 		ResetVariables(client);
-	
-		if (gcv_bDebug.BoolValue)
-		{
-			Log("hl_gangs.log","Client %L disconnecting. Saving to database!", client);
-		}
 	}
 }
 
@@ -202,25 +208,14 @@ public void OnConfigsExecuted()
 			{
 				if (IsValidClient(i))
 				{
-					#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 7
-						GetClientAuthId(i, AuthId_Steam2, ga_sSteamID[i], sizeof(ga_sSteamID[]));
-					#else
-						GetClientAuthString(i, ga_sSteamID[i], sizeof(ga_sSteamID[]));
-					#endif
+					GetClientAuthId(i, AuthId_Steam2, ga_sSteamID[i], sizeof(ga_sSteamID[]));
+
 					if (StrContains(ga_sSteamID[i], "STEAM_", true) != -1)
 					{
-						if (gcv_bDebug.BoolValue)
-						{
-							Log("hl_gangs.log","Loading #s for %L", i);
-						}
 						LoadSteamID(i);
 					}
 					else
 					{
-						if (gcv_bDebug.BoolValue)
-						{
-							Log("hl_gangs.log","Refreshing steam ID for client %L", i);
-						}
 						CreateTimer(10.0, RefreshSteamID, GetClientUserId(i), TIMER_FLAG_NO_MAPCHANGE);
 					}
 				}
@@ -300,26 +295,15 @@ public Action RefreshSteamID(Handle hTimer, int iUserID)
 		return;
 	}
 
-	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 7
-		GetClientAuthId(client, AuthId_Steam2, ga_sSteamID[client], sizeof(ga_sSteamID[]));
-	#else
-		GetClientAuthString(client, ga_sSteamID[client], sizeof(ga_sSteamID[]));
-	#endif
+	GetClientAuthId(client, AuthId_Steam2, ga_sSteamID[client], sizeof(ga_sSteamID[]));
 	
 	if (StrContains(ga_sSteamID[client], "STEAM_", true) == -1) //still invalid - retry again
 	{
-		if (gcv_bDebug.BoolValue)
-		{
-			Log("hl_gangs.log","Re-refreshing steam ID for client %L", client);
-		}
+
 		CreateTimer(10.0, RefreshSteamID, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 	}
 	else
 	{
-		if (gcv_bDebug.BoolValue)
-		{
-			Log("hl_gangs.log","Loading client %L", client);
-		}
 		LoadSteamID(client);
 	}
 }
@@ -356,11 +340,8 @@ public void OnClientPostAdminCheck(int client)
 {
 	if (gcv_bPluginEnabled.BoolValue)
 	{	
-		#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 7
-			GetClientAuthId(client, AuthId_Steam2, ga_sSteamID[client], sizeof(ga_sSteamID[]));
-		#else
-			GetClientAuthString(client, ga_sSteamID[client], sizeof(ga_sSteamID[]));
-		#endif
+		GetClientAuthId(client, AuthId_Steam2, ga_sSteamID[client], sizeof(ga_sSteamID[]));
+
 		LoadSteamID(client);
 	}
 }
@@ -417,11 +398,6 @@ public void SQLCallback_Connect(Handle hOwner, Handle hHndl, const char[] sError
 		SQL_TQuery(g_hDatabase, SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_players` (`id` int(20) NOT NULL AUTO_INCREMENT, `steamid` varchar(32) NOT NULL, `playername` varchar(32) NOT NULL, `gang` varchar(32) NOT NULL, `rank` int(16) NOT NULL, `invitedby` varchar(32) NOT NULL, `date` int(32) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
 		SQL_TQuery(g_hDatabase, SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_groups` (`id` int(20) NOT NULL AUTO_INCREMENT, `gang` varchar(32) NOT NULL, `health` int(16) NOT NULL, `damage` int(16) NOT NULL, `gravity` int(16) NOT NULL, `speed` int(16) NOT NULL, `size` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
 		SQL_TQuery(g_hDatabase, SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_statistics` (`id` int(20) NOT NULL AUTO_INCREMENT, `gang` varchar(32) NOT NULL, `ctkills` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
-
-		if (gcv_bDebug.BoolValue)
-		{
-			Log("hl_gangs.log","Successfully connected to database!");
-		}
 	}
 }
 
@@ -433,34 +409,19 @@ void LoadSteamID(int client)
 		{
 			return;
 		}
-		#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 7
-			GetClientAuthId(client, AuthId_Steam2, ga_sSteamID[client], sizeof(ga_sSteamID[]));
-		#else
-			GetClientAuthString(client, ga_sSteamID[client], sizeof(ga_sSteamID[]));
-		#endif
+		GetClientAuthId(client, AuthId_Steam2, ga_sSteamID[client], sizeof(ga_sSteamID[]));
+
 		if (StrContains(ga_sSteamID[client], "STEAM_", true) == -1) //if ID is invalid
 		{
 			CreateTimer(10.0, RefreshSteamID, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
-			if (gcv_bDebug.BoolValue)
-			{
-				Log("hl_gangs.log","Refreshing Steam ID for client %L!", client);
-			}
 		}
 		
 		if (g_hDatabase == INVALID_HANDLE) //connect not loaded - retry to give it time
 		{
 			CreateTimer(1.0, RepeatCheckRank, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
-			if (gcv_bDebug.BoolValue)
-			{
-				Log("hl_gangs.log","Database connection not established yet! Delaying loading of client %L", client);
-			}
 		}
 		else
 		{
-			if (gcv_bDebug.BoolValue)
-			{
-				Log("hl_gangs.log","Sending database query to load client %L", client);
-			}
 			char sQuery[300];
 			Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_players WHERE steamid=\"%s\"", ga_sSteamID[client]);
 			SQL_TQuery(g_hDatabase, SQLCallback_CheckSQL_Player, sQuery, GetClientUserId(client));
@@ -574,11 +535,6 @@ public void SQL_Callback_CTKills(Handle hOwner, Handle hHndl, const char[] sErro
 		if (SQL_GetRowCount(hHndl) == 1 && SQL_FetchRow(hHndl))
 		{
 			ga_iCTKills[client] = SQL_FetchInt(hHndl, 2);
-			
-			if(gcv_bDebug.BoolValue)
-			{
-				Log("hl_gangs.log","Player %L has been completely loaded from the database", client);
-			}
 		}
 
 	}
@@ -591,11 +547,11 @@ public Action RepeatCheckRank(Handle hTimer, int iUserID)
 	LoadSteamID(client);
 }
 
-public void SQLCallback_Void(Handle hOwner, Handle hHndl, const char[] sError, int iData)
+public void SQLCallback_Void(Handle hOwner, Handle hHndl, const char[] sError, int data)
 {
 	if (hHndl == INVALID_HANDLE)
 	{
-		LogError("Error (%i): %s", iData, sError);
+		LogError("Error (%i): %s", data, sError);
 	}
 }
 
@@ -1987,7 +1943,7 @@ public int MenuCallback_Void (Handle hMenu, MenuAction action, int param1, int p
 ******************************************************************/
 
 
-stock void UpdateSQL(int client)
+void UpdateSQL(int client)
 {
 	if (ga_bHasGang[client] &&ga_bLoaded[client] && !StrEqual(ga_sSteamID[client], "", false))
 	{
@@ -2131,22 +2087,18 @@ void DeleteDuplicates()
 {
 	if (g_hDatabase != INVALID_HANDLE)
 	{
-		if (gcv_bDebug.BoolValue)
-		{
-			Log("hl_gangs.log","Duplicates detected in database. Deleting duplicate Steam IDs!");
-		}
 		SQL_TQuery(g_hDatabase, SQLCallback_Void, "delete hl_gangs_players from hl_gangs_players inner join (select min(id) minid, steamid from hl_gangs_players group by steamid having count(1) > 1) as duplicates on (duplicates.steamid = hl_gangs_players.steamid and duplicates.minid <> hl_gangs_players.id)", 4);
 	}
 }
 
 int GetClientCredits(int client)
 {
-	return hl_jailbreakshop_GetClientCredits(client);
+	return Store_GetClientCredits(client);
 }
 
 void SetClientCredits(int client, int iAmmount)
 {
-	hl_jailbreakshop_SetClientCredits(client, iAmmount);
+	Store_SetClientCredits(client, iAmmount);
 }
 
 void RemoveFromGang(int client)
@@ -2316,7 +2268,7 @@ void PrintToGang(int client, bool bPrintToClient = false, const char[] sMsg, any
 }
 
 
-stock void ResetVariables(int client)
+void ResetVariables(int client)
 {
 	ga_iRank[client] = -1;
 	ga_iGangSize[client] = -1;
@@ -2375,12 +2327,12 @@ void LastRequest()
 	}
 }
 
-int GetPlayerAliveCount(int Team)
+int GetPlayerAliveCount(int team)
 {
 	int iAmmount = 0;
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsValidClient(i) && IsPlayerAlive(i) && GetClientTeam(i) == Team)
+		if (IsValidClient(i) && IsPlayerAlive(i) && GetClientTeam(i) == team)
 		{
 			iAmmount++;
 		}
@@ -2395,13 +2347,4 @@ bool IsValidClient(int client, bool bAllowBots = false, bool bAllowDead = true)
 		return false;
 	}
 	return true;
-}
-
-void Log(char[] sPath, const char[] sMsg, any ...)
-{
-	char sLogFilePath[PLATFORM_MAX_PATH];
-	char sFormattedMsg[256];
-	BuildPath(Path_SM, sLogFilePath, sizeof(sLogFilePath), "logs/%s", sPath);
-	VFormat(sFormattedMsg, sizeof(sFormattedMsg), sMsg, 3);
-	LogToFileEx(sLogFilePath, "%s", sFormattedMsg);
 }
