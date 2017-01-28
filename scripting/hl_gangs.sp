@@ -28,11 +28,6 @@
 #define PLUGIN_VERSION "1.0b"
 #define TAG " \x03[Gangs]\x01"
 
-/* Plugin-Specific Defines */
-#define GANGRANK_OWNER 2
-#define GANGRANK_ADMIN 1
-#define GANGRANK_NORMAL 0
-
 /* Compiler Instructions */
 #pragma semicolon 1
 #pragma newdecls required
@@ -51,7 +46,7 @@ ConVar gcv_iRenamePrice;
 ConVar gcv_iSizePrice;
 
 /* Gang Globals */
-int ga_iRank[MAXPLAYERS + 1] = {-1, ...}; // 0 - Regular | 1 - Admin | 2 - Owner
+GangRank ga_iRank[MAXPLAYERS + 1] = {Rank_Invalid, ...};
 int ga_iGangSize[MAXPLAYERS + 1] = {-1, ...};
 int ga_iInvitation[MAXPLAYERS + 1] = {-1, ...};
 int ga_iDateJoined[MAXPLAYERS + 1] = {-1, ...};
@@ -89,23 +84,79 @@ char g_sDatabaseName[60];
 
 public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_max)
 {
-	CreateNative("hl_gangs_DamageModifier", Native_GetDmgModifier);
-	
+	CreateNative("Gangs_GetDamageModifier", Native_GetDmgModifier);
+	CreateNative("Gangs_GetGangName", Native_GetGangName);
+	CreateNative("Gangs_GetGangRank", Native_GetGangRank);
+	CreateNative("Gangs_HasGang", Native_HasGang);
+	CreateNative("Gangs_GetGangSize", Native_GetGangSize);
+
 	RegPluginLibrary("hl_gangs_library");
 
 	g_bLateLoad = bLate;
 	return APLRes_Success;
 }
 
-
 public int Native_GetDmgModifier(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
-	
+
+	if (!IsValidClient(client))
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%i)", client);
+	}
+
 	float fDamage = ga_iDamage[client] * 1.5;
 	return view_as<int>(fDamage);
 }
 
+public int Native_GetGangName(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	
+	if (!IsValidClient(client))
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%i)", client);
+	}
+
+	SetNativeString(2, ga_sGangName[client], GetNativeCell(3));
+	return 0;
+}
+
+public int Native_GetGangRank(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	
+	if (!IsValidClient(client))
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%i)", client);
+	}
+
+	return view_as<int>(ga_iRank[client]);
+}
+
+public int Native_HasGang(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	
+	if (!IsValidClient(client))
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%i)", client);
+	}
+	
+	return view_as<int>(ga_bHasGang[client]);
+}
+
+public int Native_GetGangSize(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	
+	if (!IsValidClient(client))
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%i)", client);
+	}
+
+	return ga_iGangSize[client];
+}
 public Plugin myinfo =
 {
 	name = "[CS:GO] Jailbreak Gangs",
@@ -123,9 +174,9 @@ public void OnPluginStart()
 	AutoExecConfig_SetFile("hl_gangs");
 	
 	AutoExecConfig_CreateConVar("hl_gangs_version", PLUGIN_VERSION, "Headline's Gangs Plugin : Version", FCVAR_NOTIFY|FCVAR_DONTRECORD);
-		
+	
 	gcv_bPluginEnabled = AutoExecConfig_CreateConVar("hl_gangs_enabled", "1", "Enable the plugin? (1 = Yes, 0 = No)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-		
+	
 	gcv_bInviteStyle = AutoExecConfig_CreateConVar("hl_gangs_invite_style", "1", "Set invite style to pop up a Menu? \n      (1 = Menu, 0 = Registered Command)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
 	gcv_sDatabase = AutoExecConfig_CreateConVar("hl_gangs_database_name", "hl_gangs", "Name of the database for the plugin.");
@@ -144,12 +195,12 @@ public void OnPluginStart()
 
 	gcv_iCreateGangPrice = AutoExecConfig_CreateConVar("hl_gangs_creation_price", "100", "Price of gang creation");
 
-	gcv_iRenamePrice = AutoExecConfig_CreateConVar("hl_gangs_rename_price", "100", "Price to rename");
-
-	gcv_sDatabase.GetString(g_sDatabaseName, sizeof(g_sDatabaseName));
+	gcv_iRenamePrice = AutoExecConfig_CreateConVar("hl_gangs_rename_price", "100", "Price to rename");	
 	
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
+
+	gcv_sDatabase.GetString(g_sDatabaseName, sizeof(g_sDatabaseName));
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_death", Event_PlayerDeath, EventHookMode_Post);
@@ -200,7 +251,7 @@ public void OnConfigsExecuted()
 	{
 		if (g_hDatabase == null)
 		{
-			SetDBHandle();
+			SetDB();
 		}
 		if (g_bLateLoad)
 		{
@@ -224,19 +275,19 @@ public void OnConfigsExecuted()
 	}
 }
 
-public Action Event_RoundEnd(Handle hEvent, const char[] sName, bool bDontBroadcast)
+public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
 	g_bLR = false;
 }
 
-public Action Event_RoundStart(Handle hEvent, const char[] sName, bool bDontBroadcast)
+public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
 	g_bLR = false;
 }
 
-public Action Event_PlayerSpawn(Handle hEvent, const char[] sName, bool bDontBroadcast)
+public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	if (IsValidClient(client) && GetClientTeam(client) == 2)
 	{
 		if (ga_bHasGang[client])
@@ -346,10 +397,10 @@ public void OnClientPostAdminCheck(int client)
 	}
 }
 
-public Action Event_PlayerDeath(Handle hEvent, const char[] sName, bool bDontBroadcast)
+public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
-	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 
 	if (GetPlayerAliveCount(2) == 1 && GetPlayerAliveCount(3) > 0)
 	{
@@ -385,7 +436,7 @@ public void SQLCallback_Connect(Database db, const char[] error, any data)
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 	else
 	{
@@ -429,7 +480,7 @@ public void SQLCallback_CheckSQL_Player(Database db, DBResultSet results, const 
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 	
 	int client = GetClientOfUserId(data);
@@ -444,7 +495,7 @@ public void SQLCallback_CheckSQL_Player(Database db, DBResultSet results, const 
 			results.FetchRow();
 
 			results.FetchString(3, ga_sGangName[client], sizeof(ga_sGangName[]));
-			ga_iRank[client] = results.FetchInt(4);
+			ga_iRank[client] = view_as<GangRank>(results.FetchInt(4));
 			results.FetchString(5, ga_sInvitedBy[client], sizeof(ga_sInvitedBy[]));
 			ga_iDateJoined[client] = results.FetchInt(6);
 			
@@ -483,29 +534,29 @@ public void SQLCallback_CheckSQL_Player(Database db, DBResultSet results, const 
 	}
 }
 
-public void SQLCallback_CheckSQL_Groups(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
+public void SQLCallback_CheckSQL_Groups(Database db, DBResultSet results, const char[] error, int data)
 {
-	if (hHndl == null)
+	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 	
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
 		return;
 	}
 	else 
 	{
-		if (SQL_GetRowCount(hHndl) == 1)
+		if (results.RowCount == 1)
 		{
-			SQL_FetchRow(hHndl);
+			results.FetchRow();
 
-			ga_iHealth[client] = SQL_FetchInt(hHndl, 2);
-			ga_iDamage[client] = SQL_FetchInt(hHndl, 3);
-			ga_iGravity[client] = SQL_FetchInt(hHndl, 4);
-			ga_iSpeed[client] = SQL_FetchInt(hHndl, 5);
-			ga_iSize[client] = SQL_FetchInt(hHndl, 6);
+			ga_iHealth[client] = results.FetchInt(2);
+			ga_iDamage[client] = results.FetchInt(3);
+			ga_iGravity[client] = results.FetchInt(4);
+			ga_iSpeed[client] = results.FetchInt(5);
+			ga_iSize[client] = results.FetchInt(6);
 
 			char sQuery[300];
 			Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_statistics WHERE gang=\"%s\"", ga_sGangName[client]);
@@ -518,7 +569,7 @@ public void SQL_Callback_CTKills(Database db, DBResultSet results, const char[] 
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 	
 	int client = GetClientOfUserId(data);
@@ -538,7 +589,7 @@ public void SQL_Callback_CTKills(Database db, DBResultSet results, const char[] 
 }
 
 
-public Action RepeatCheckRank(Handle hTimer, int iUserID)
+public Action RepeatCheckRank(Handle timer, int iUserID)
 {
 	int client = GetClientOfUserId(iUserID);
 	LoadSteamID(client);
@@ -608,7 +659,7 @@ public Action Command_Accept(int client, int args)
 	
 	ga_sInvitedBy[client] = sName;
 	ga_iGangSize[client] = 1;
-	ga_iRank[client] = GANGRANK_NORMAL;
+	ga_iRank[client] = Rank_Normal;
 	UpdateSQL(client);
 	return Plugin_Handled;
 }
@@ -649,21 +700,21 @@ void StartOpeningGangMenu(int client)
 	}
 }
 
-public void SQLCallback_OpenGangMenu(Handle hOwner, Handle hHndl, const char[] sError, int iUserID)
+public void SQLCallback_OpenGangMenu(Database db, DBResultSet results, const char[] error, int data)
 {
-	if (hHndl == null)
+	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 	
-	int client = GetClientOfUserId(iUserID);
+	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
 		return;
 	}
 	else 
 	{
-		ga_iGangSize[client] = SQL_GetRowCount(hHndl);
+		ga_iGangSize[client] = results.RowCount;
 	}
 	OpenGangsMenu(client);
 }
@@ -687,10 +738,10 @@ void OpenGangsMenu(int client)
 	
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Create a Gang! [%i Credits]", gcv_iCreateGangPrice.IntValue);
 	menu.AddItem("create", sDisplayBuffer, (ga_bHasGang[client] || GetClientCredits(client) < gcv_iCreateGangPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
-	menu.AddItem("invite", "Invite to Gang", (ga_bHasGang[client] && ga_iRank[client] > GANGRANK_NORMAL && ga_iGangSize[client] < gcv_iMaxGangSize.IntValue + ga_iSize[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	menu.AddItem("invite", "Invite to Gang", (ga_bHasGang[client] && ga_iRank[client] > Rank_Normal && ga_iGangSize[client] < gcv_iMaxGangSize.IntValue + ga_iSize[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 	menu.AddItem("members", "Gang Members", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 	menu.AddItem("perks", "Gang Perks", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	menu.AddItem("admin", "Gang Admin", (ga_iRank[client] >= 1)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	menu.AddItem("admin", "Gang Admin", (ga_iRank[client] >= Rank_Admin)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 	menu.AddItem("leave", "Leave Gang", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 	menu.AddItem("topgangs", "Top Gangs");
 
@@ -781,67 +832,66 @@ public Action OnSay(int client, const char[] command, int args)
 	}
 	if (ga_bSetName[client])
 	{
-		char sText[64]; 
+		char sText[64], sFormattedText[2*sizeof(sText)+1]; 
 		GetCmdArgString(sText, sizeof(sText));
 		
-		StripQuotes(sText);
-		TrimString(sText);
+		g_hDatabase.Escape(sText, sFormattedText, sizeof(sFormattedText));
+		TrimString(sFormattedText);
 		
-		if (strlen(sText) > 16)
+		if (strlen(sFormattedText) > 16)
 		{
 			PrintToChat(client, "%s \x04The name you selected is too long!", TAG);
 			return Plugin_Handled;
 		}
 		
-		Handle hDatapack = CreateDataPack();
-		WritePackCell(hDatapack, client);
-		WritePackString(hDatapack, sText);
-		ResetPack(hDatapack);
+		DataPack data = new DataPack();
+		data.WriteCell(client);
+		data.WriteString(sFormattedText);
+		data.Reset();
 
 		char sQuery[300];
-		Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_groups WHERE gang=\"%s\"", sText);
-		g_hDatabase.Query(SQL_Callback_CheckName, sQuery, hDatapack);
+		Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_groups WHERE gang=\"%s\"", sFormattedText);
+		g_hDatabase.Query(SQL_Callback_CheckName, sQuery, data);
 
 		return Plugin_Handled;
 	}
 	else if (ga_bRename[client])
 	{
-		char sText[64]; 
+		char sText[64], sFormattedText[2*sizeof(sText)+1]; 
 		GetCmdArgString(sText, sizeof(sText));
 		
-		StripQuotes(sText);
-		TrimString(sText);
+		g_hDatabase.Escape(sText, sFormattedText, sizeof(sFormattedText));
+		TrimString(sFormattedText);
 
-		if (strlen(sText) > 16)
+		if (strlen(sFormattedText) > 16)
 		{
 			PrintToChat(client, "%s \x04The name you selected is too long!", TAG);
 			return Plugin_Handled;
 		}
 		
-		char sQuery[300];
-		Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_groups WHERE gang=\"%s\"", sText);
-		
-		Handle hDatapack = CreateDataPack();
-		WritePackCell(hDatapack, client);
-		WritePackString(hDatapack, sText);
-		ResetPack(hDatapack);
+		DataPack data = new DataPack();
+		data.WriteCell(client);
+		data.WriteString(sFormattedText);
+		data.Reset();
 
-		g_hDatabase.Query(SQL_Callback_CheckName, sQuery, hDatapack);
+		char sQuery[300];
+		Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_groups WHERE gang=\"%s\"", sFormattedText);
+		g_hDatabase.Query(SQL_Callback_CheckName, sQuery, data);
 
 		return Plugin_Handled;
 	}
 	return Plugin_Continue;
 }
 
-public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[] error, Handle data)
+public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[] error, DataPack data)
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 	char sText[64];
-	int client = ReadPackCell(data);
-	ReadPackString(data, sText, sizeof(sText));
+	int client = data.ReadCell();
+	data.ReadString(sText, sizeof(sText));
 	delete data;
 
 	if (!IsValidClient(client))
@@ -860,7 +910,7 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 				ga_iDateJoined[client] = GetTime();
 				ga_bHasGang[client] =  true;
 				ga_sInvitedBy[client] = "N/A";
-				ga_iRank[client] = GANGRANK_OWNER;
+				ga_iRank[client] = Rank_Owner;
 				ga_iGangSize[client] = 1;
 
 				ga_iHealth[client] = 0;
@@ -884,9 +934,8 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 		}
 		else if (ga_bRename[client])
 		{
-			if (results.RowCount == 0)
+			if (results.RowCount != 0)
 			{
-
 				char sOldName[32];
 				strcopy(sOldName, sizeof(sOldName), ga_sGangName[client]);
 				strcopy(ga_sGangName[client], sizeof(ga_sGangName[]), sText);
@@ -950,7 +999,7 @@ public void SQLCallback_OpenMembersMenu(Database db, DBResultSet results, const 
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
@@ -1105,7 +1154,7 @@ void OpenInvitationMenu(int client)
 		{
 			Format(sInfoString, sizeof(sInfoString), "%i", GetClientUserId(i));
 			Format(sDisplayString, sizeof(sDisplayString), "%N", i);
-			menu.AddItem(sInfoString, sDisplayString, (ga_bHasGang[i] || ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+			menu.AddItem(sInfoString, sDisplayString, (ga_bHasGang[i] || ga_iRank[client] == Rank_Normal)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 		}
 	}
 
@@ -1199,7 +1248,7 @@ public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int
 				GetClientName(GetClientOfUserId(ga_iInvitation[param1]), sName, sizeof(sName));
 				ga_sInvitedBy[param1] = sName;
 				ga_iGangSize[param1] = 1;
-				ga_iRank[param1] = GANGRANK_NORMAL;
+				ga_iRank[param1] = Rank_Normal;
 				UpdateSQL(param1);
 				PrintToChatAll("%s \x05%N\x04 has joined \x02%s!", TAG, param1, ga_sGangName[param1]);
 			}
@@ -1240,7 +1289,7 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 	
 	int client = GetClientOfUserId(data);
@@ -1364,7 +1413,7 @@ void OpenLeaveConfirmation(int client)
 	SetMenuTitle(menu, "Leave Gang?");
 
 	menu.AddItem("", "Are you sure you want to leave?", ITEMDRAW_DISABLED);
-	if (ga_iRank[client] == GANGRANK_OWNER)
+	if (ga_iRank[client] == Rank_Owner)
 	{
 		menu.AddItem("", "As owner, leaving will disband your gang!", ITEMDRAW_DISABLED);
 	}
@@ -1421,14 +1470,14 @@ void OpenAdministrationMenu(int client)
 	SetMenuTitle(menu, "Gang Admin");
 	char sDisplayString[128];
 	
-	menu.AddItem("kick", "Kick a member", (ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem("kick", "Kick a member", (ga_iRank[client] == Rank_Normal)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 	
 	Format(sDisplayString, sizeof(sDisplayString), "Rename Gang [%i Credits]", gcv_iRenamePrice.IntValue);
-	menu.AddItem("rename", sDisplayString, (ga_iRank[client] == GANGRANK_OWNER && GetClientCredits(client) >= gcv_iRenamePrice.IntValue)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	menu.AddItem("rename", sDisplayString, (ga_iRank[client] == Rank_Owner && GetClientCredits(client) >= gcv_iRenamePrice.IntValue)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 	
-	menu.AddItem("promote", "Promote a member", (ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem("promote", "Promote a member", (ga_iRank[client] == Rank_Normal)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 	
-	menu.AddItem("disband", "Disband gang", (ga_iRank[client] == GANGRANK_OWNER)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	menu.AddItem("disband", "Disband gang", (ga_iRank[client] == Rank_Owner)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 
 
 	menu.ExitBackButton = true;
@@ -1503,7 +1552,7 @@ public void SQLCallback_AdministrationPromotionMenu(Database db, DBResultSet res
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
@@ -1531,7 +1580,7 @@ public void SQLCallback_AdministrationPromotionMenu(Database db, DBResultSet res
 				char sDisplayString[128];
 				Format(sInfoString, sizeof(sInfoString), "%s;%s;%i", sTempArray[0], sTempArray[1], StringToInt(sTempArray[2]));
 				Format(sDisplayString, sizeof(sDisplayString), "%s (%s)", sTempArray[1], sTempArray[0]);
-				menu.AddItem(sInfoString, sDisplayString, (ga_iRank[client] == GANGRANK_OWNER)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+				menu.AddItem(sInfoString, sDisplayString, (ga_iRank[client] == Rank_Owner)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 			}
 		}
 		menu.ExitBackButton = true;
@@ -1576,10 +1625,10 @@ void OpenPromoteDemoteMenu(int client, const char[] sInfo)
 	menu.AddItem("", "Simply click on the desired rank to set", ITEMDRAW_DISABLED);
 	
 	Format(sInfoString, sizeof(sInfoString), "%s;normal", sTempArray[0]);
-	menu.AddItem(sInfoString, "Normal", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem(sInfoString, "Normal", (ga_iRank[client] != Rank_Owner)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 	Format(sInfoString, sizeof(sInfoString), "%s;admin", sTempArray[0]);
-	menu.AddItem(sInfoString, "Admin", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem(sInfoString, "Admin", (ga_iRank[client] != Rank_Owner)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 	menu.ExitBackButton = true;
 
@@ -1657,9 +1706,9 @@ void OpenDisbandMenu(int client)
 	menu.AddItem("", "Are you sure you want to disband your gang?", ITEMDRAW_DISABLED);
 	menu.AddItem("", "This change is PERMANENT", ITEMDRAW_DISABLED);
 
-	menu.AddItem("disband", "Disband The Gang", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem("disband", "Disband The Gang", (ga_iRank[client] != Rank_Owner)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-	menu.AddItem("no", "Don't Disband The Gang", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem("no", "Don't Disband The Gang", (ga_iRank[client] != Rank_Owner)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 	menu.ExitBackButton = true;
 
@@ -1710,7 +1759,7 @@ public void SQLCallback_AdministrationKickMenu(Database db, DBResultSet results,
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
@@ -1736,7 +1785,7 @@ public void SQLCallback_AdministrationKickMenu(Database db, DBResultSet results,
 
 			Format(sInfoString, sizeof(sInfoString), "%s;%s", sTempArray[0], sTempArray[1]);
 			Format(sDisplayString, sizeof(sDisplayString), "%s (%s)", sTempArray[1], sTempArray[0]);
-			menu.AddItem(sInfoString, sDisplayString, (ga_iRank[client] > StringToInt(sTempArray[2]))?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+			menu.AddItem(sInfoString, sDisplayString, (ga_iRank[client] > view_as<GangRank>(StringToInt(sTempArray[2])))?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		}
 		menu.ExitBackButton = true;
 
@@ -1806,7 +1855,7 @@ public void SQL_Callback_TopMenu(Database db, DBResultSet results, const char[] 
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
@@ -1885,7 +1934,7 @@ public void SQL_Callback_GangStatistics(Database db, DBResultSet results, const 
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
@@ -1971,7 +2020,7 @@ public void SQLCallback_CheckIfInDatabase_Player(Database db, DBResultSet result
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 
 	int client = GetClientOfUserId(data);
@@ -2010,7 +2059,7 @@ public void SQLCALLBACK_GROUPS(Database db, DBResultSet results, const char[] er
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 
 	int client = GetClientOfUserId(data);
@@ -2052,7 +2101,7 @@ public void SQL_Callback_LoadStatistics(Database db, DBResultSet results, const 
 {
 	if (db == null)
 	{
-		SetDBHandle();
+		SetDB();
 	}
 
 	int client = GetClientOfUserId(data);
@@ -2085,7 +2134,7 @@ public void SQL_Callback_LoadStatistics(Database db, DBResultSet results, const 
 
 }
 
-void SetDBHandle()
+void SetDB()
 {
 	if (g_hDatabase == null)
 	{
@@ -2114,7 +2163,7 @@ void SetClientCredits(int client, int iAmmount)
 
 void RemoveFromGang(int client)
 {
-	if (ga_iRank[client] == GANGRANK_OWNER)
+	if (ga_iRank[client] == Rank_Owner)
 	{
 		char sQuery1[300];
 		char sQuery2[300];
@@ -2281,7 +2330,7 @@ void PrintToGang(int client, bool bPrintToClient = false, const char[] sMsg, any
 
 void ResetVariables(int client)
 {
-	ga_iRank[client] = -1;
+	ga_iRank[client] = Rank_Invalid;
 	ga_iGangSize[client] = -1;
 	ga_iInvitation[client] = -1;
 	ga_iDateJoined[client] = -1;
