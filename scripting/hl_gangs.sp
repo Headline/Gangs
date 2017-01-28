@@ -671,7 +671,7 @@ public void SQLCallback_OpenGangMenu(Handle hOwner, Handle hHndl, const char[] s
 
 void OpenGangsMenu(int client)
 {
-	Handle menu = CreateMenu(GangsMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
+	Menu menu = CreateMenu(GangsMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
 	if (ga_bHasGang[client])
 	{
 		char sString[128];
@@ -687,16 +687,16 @@ void OpenGangsMenu(int client)
 	char sDisplayBuffer[128];
 	
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Create a Gang! [%i Credits]", gcv_iCreateGangPrice.IntValue);
-	AddMenuItem(menu, "create", sDisplayBuffer, (ga_bHasGang[client] || GetClientCredits(client) < gcv_iCreateGangPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
-	AddMenuItem(menu, "invite", "Invite to Gang", (ga_bHasGang[client] && ga_iRank[client] > GANGRANK_NORMAL && ga_iGangSize[client] < gcv_iMaxGangSize.IntValue + ga_iSize[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	AddMenuItem(menu, "members", "Gang Members", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	AddMenuItem(menu, "perks", "Gang Perks", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	AddMenuItem(menu, "admin", "Gang Admin", (ga_iRank[client] >= 1)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	AddMenuItem(menu, "leave", "Leave Gang", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	AddMenuItem(menu, "topgangs", "Top Gangs");
+	menu.AddItem("create", sDisplayBuffer, (ga_bHasGang[client] || GetClientCredits(client) < gcv_iCreateGangPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem("invite", "Invite to Gang", (ga_bHasGang[client] && ga_iRank[client] > GANGRANK_NORMAL && ga_iGangSize[client] < gcv_iMaxGangSize.IntValue + ga_iSize[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	menu.AddItem("members", "Gang Members", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	menu.AddItem("perks", "Gang Perks", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	menu.AddItem("admin", "Gang Admin", (ga_iRank[client] >= 1)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	menu.AddItem("leave", "Leave Gang", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	menu.AddItem("topgangs", "Top Gangs");
 
 	
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.Display(client, MENU_TIME_FOREVER);
 
 }
 
@@ -961,7 +961,7 @@ public void SQLCallback_OpenMembersMenu(Database db, DBResultSet results, const 
 	else
 	{
 
-		Handle menu = CreateMenu(MemberListMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+		Menu menu = CreateMenu(MemberListMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
 		SetMenuTitle(menu, "Member List :");
 
 		while (results.FetchRow())
@@ -991,14 +991,15 @@ public void SQLCallback_OpenMembersMenu(Database db, DBResultSet results, const 
 			{
 				Format(sDisplayString, sizeof(sDisplayString), "%s (Owner)", a_sTempArray[1]);
 			}
-			AddMenuItem(menu, sInfoString, sDisplayString);
+			menu.AddItem(sInfoString, sDisplayString);
 		}
-		SetMenuExitBackButton(menu, true);
-		DisplayMenu(menu, client, MENU_TIME_FOREVER);
+		menu.ExitBackButton = true;
+
+		menu.Display(client, MENU_TIME_FOREVER);
 	}
 }
 
-public int MemberListMenu_CallBack(Handle menu, MenuAction action, int param1, int param2)
+public int MemberListMenu_CallBack(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -1022,7 +1023,7 @@ public int MemberListMenu_CallBack(Handle menu, MenuAction action, int param1, i
 
 void OpenIndividualMemberMenu(int client, char[] sInfo)
 {
-	Handle menu = CreateMenu(IndividualMemberMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+	Menu menu = CreateMenu(IndividualMemberMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
 	SetMenuTitle(menu, "Information On : ");
 
 	char sTempArray[5][64]; // 0 - SteamID | 1 - Name | 2 - Invited By | 3 - Rank | 4 - Date (UTF)
@@ -1031,13 +1032,13 @@ void OpenIndividualMemberMenu(int client, char[] sInfo)
 	ExplodeString(sInfo, ";", sTempArray, 5, sizeof(sTempArray[]));
 
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Name : %s", sTempArray[1]);
-	AddMenuItem(menu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
+	menu.AddItem("", sDisplayBuffer, ITEMDRAW_DISABLED);
 
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Steam ID : %s", sTempArray[0]);
-	AddMenuItem(menu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
+	menu.AddItem("", sDisplayBuffer, ITEMDRAW_DISABLED);
 
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Invited By : %s", sTempArray[2]);
-	AddMenuItem(menu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
+	menu.AddItem("", sDisplayBuffer, ITEMDRAW_DISABLED);
 
 
 	if (StrEqual(sTempArray[3], "0"))
@@ -1052,17 +1053,18 @@ void OpenIndividualMemberMenu(int client, char[] sInfo)
 	{
 		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Rank : Owner");
 	}
-	AddMenuItem(menu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
+	menu.AddItem("", sDisplayBuffer, ITEMDRAW_DISABLED);
 
 	char sFormattedTime[64];
 	FormatTime(sFormattedTime, sizeof(sFormattedTime), "%x", StringToInt(sTempArray[4]));
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Date Joined : %s", sFormattedTime);
 
-	AddMenuItem(menu, "", sDisplayBuffer, ITEMDRAW_DISABLED);
+	menu.AddItem("", sDisplayBuffer, ITEMDRAW_DISABLED);
 
-	SetMenuExitBackButton(menu, true);
+	menu.ExitBackButton = true;
 
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int IndividualMemberMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
@@ -1092,7 +1094,7 @@ public int IndividualMemberMenu_Callback(Menu menu, MenuAction action, int param
 
 void OpenInvitationMenu(int client)
 {
-	Handle menu = CreateMenu(InvitationMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
+	Menu menu = CreateMenu(InvitationMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
 	SetMenuTitle(menu, "Invite a player!");
 
 	char sInfoString[64];
@@ -1104,11 +1106,11 @@ void OpenInvitationMenu(int client)
 		{
 			Format(sInfoString, sizeof(sInfoString), "%i", GetClientUserId(i));
 			Format(sDisplayString, sizeof(sDisplayString), "%N", i);
-			AddMenuItem(menu, sInfoString, sDisplayString, (ga_bHasGang[i] || ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+			menu.AddItem(sInfoString, sDisplayString, (ga_bHasGang[i] || ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 		}
 	}
 
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.Display(client, MENU_TIME_FOREVER);
 
 }
 
@@ -1154,21 +1156,21 @@ public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int
 
 void OpenGangInvitationMenu(int client)
 {
-	Handle menu = CreateMenu(SentInviteMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
+	Menu menu = CreateMenu(SentInviteMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
 	SetMenuTitle(menu, "Invite a player!");
 	char sDisplayString[64];
 
 	Format(sDisplayString, sizeof(sDisplayString), "%N has invited you to their gang!", GetClientOfUserId(ga_iInvitation[client]));
-	AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
+	menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
 	Format(sDisplayString, sizeof(sDisplayString), "Would you like to join \"%s\"", ga_sGangName[GetClientOfUserId(ga_iInvitation[client])]);
-	AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
+	menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
-	AddMenuItem(menu, "yes", "Yes, I'd like to join");
+	menu.AddItem("yes", "Yes, I'd like to join");
 
-	AddMenuItem(menu, "no", "No, I'd like to decline");
+	menu.AddItem("no", "No, I'd like to decline");
 
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 
@@ -1250,7 +1252,7 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 	}
 	else
 	{
-		Handle menu = CreateMenu(PerksMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
+		Menu menu = CreateMenu(PerksMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
 		SetMenuTitle(menu, "Gang Perks");
 		if (results.RowCount == 1 && results.FetchRow())
 		{
@@ -1264,29 +1266,30 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 		char sDisplayBuffer[64];
 
 		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Health [%i/10] [%i Credits]", ga_iHealth[client], gcv_iHealthPrice.IntValue);
-		AddMenuItem(menu, "health", sDisplayBuffer, (ga_iHealth[client] >= 10 || GetClientCredits(client) < gcv_iHealthPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		menu.AddItem("health", sDisplayBuffer, (ga_iHealth[client] >= 10 || GetClientCredits(client) < gcv_iHealthPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 
 		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Knife Damage [%i/10] [%i Credits]", ga_iDamage[client], gcv_iDamagePrice.IntValue);
-		AddMenuItem(menu, "damage", sDisplayBuffer, (ga_iDamage[client] >= 10 || GetClientCredits(client) < gcv_iDamagePrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		menu.AddItem("damage", sDisplayBuffer, (ga_iDamage[client] >= 10 || GetClientCredits(client) < gcv_iDamagePrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 
 		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Gravity [%i/10] [%i Credits]", ga_iGravity[client], gcv_iGravityPrice.IntValue);
-		AddMenuItem(menu, "gravity", sDisplayBuffer, (ga_iGravity[client] >= 10 || GetClientCredits(client) < gcv_iGravityPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		menu.AddItem("gravity", sDisplayBuffer, (ga_iGravity[client] >= 10 || GetClientCredits(client) < gcv_iGravityPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 
 		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Speed [%i/10] [%i Credits]", ga_iSpeed[client], gcv_iSpeedPrice.IntValue);
-		AddMenuItem(menu, "speed", sDisplayBuffer, (ga_iSpeed[client] >= 10 || GetClientCredits(client) < gcv_iSpeedPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		menu.AddItem("speed", sDisplayBuffer, (ga_iSpeed[client] >= 10 || GetClientCredits(client) < gcv_iSpeedPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Gang Size [%i/9] [%i Credits]", ga_iSize[client], gcv_iSizePrice.IntValue);
-		AddMenuItem(menu, "size", sDisplayBuffer, (ga_iSize[client] >= 9 || GetClientCredits(client) < gcv_iSizePrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		menu.AddItem("size", sDisplayBuffer, (ga_iSize[client] >= 9 || GetClientCredits(client) < gcv_iSizePrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-		SetMenuExitBackButton(menu, true);
-		DisplayMenu(menu, client, MENU_TIME_FOREVER);
+		menu.ExitBackButton = true;
+
+		menu.Display(client, MENU_TIME_FOREVER);
 	}
 }
 
-public int PerksMenu_CallBack(Handle menu, MenuAction action, int param1, int param2)
+public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -1358,20 +1361,21 @@ public int PerksMenu_CallBack(Handle menu, MenuAction action, int param1, int pa
 
 void OpenLeaveConfirmation(int client)
 {
-	Handle menu = CreateMenu(LeaveConfirmation_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+	Menu menu = CreateMenu(LeaveConfirmation_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
 	SetMenuTitle(menu, "Leave Gang?");
 
-	AddMenuItem(menu, "", "Are you sure you want to leave?", ITEMDRAW_DISABLED);
+	menu.AddItem("", "Are you sure you want to leave?", ITEMDRAW_DISABLED);
 	if (ga_iRank[client] == GANGRANK_OWNER)
 	{
-		AddMenuItem(menu, "", "As owner, leaving will disband your gang!", ITEMDRAW_DISABLED);
+		menu.AddItem("", "As owner, leaving will disband your gang!", ITEMDRAW_DISABLED);
 	}
 
-	AddMenuItem(menu, "yes", "Yes, I'd like to leave!");
-	AddMenuItem(menu, "no", "No, nevermind.");
+	menu.AddItem("yes", "Yes, I'd like to leave!");
+	menu.AddItem("no", "No, nevermind.");
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int LeaveConfirmation_Callback(Menu menu, MenuAction action, int param1, int param2)
@@ -1418,18 +1422,19 @@ void OpenAdministrationMenu(int client)
 	SetMenuTitle(menu, "Gang Admin");
 	char sDisplayString[128];
 	
-	AddMenuItem(menu, "kick", "Kick a member", (ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem("kick", "Kick a member", (ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 	
 	Format(sDisplayString, sizeof(sDisplayString), "Rename Gang [%i Credits]", gcv_iRenamePrice.IntValue);
-	AddMenuItem(menu, "rename", sDisplayString, (ga_iRank[client] == GANGRANK_OWNER && GetClientCredits(client) >= gcv_iRenamePrice.IntValue)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	menu.AddItem("rename", sDisplayString, (ga_iRank[client] == GANGRANK_OWNER && GetClientCredits(client) >= gcv_iRenamePrice.IntValue)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 	
-	AddMenuItem(menu, "promote", "Promote a member", (ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem("promote", "Promote a member", (ga_iRank[client] == GANGRANK_NORMAL)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 	
-	AddMenuItem(menu, "disband", "Disband gang", (ga_iRank[client] == GANGRANK_OWNER)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	menu.AddItem("disband", "Disband gang", (ga_iRank[client] == GANGRANK_OWNER)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+
+	menu.Display(client, MENU_TIME_FOREVER);
 
 }
 
@@ -1508,7 +1513,7 @@ public void SQLCallback_AdministrationPromotionMenu(Database db, DBResultSet res
 	}
 	else
 	{
-		Handle menu = CreateMenu(AdministrationPromoMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+		Menu menu = CreateMenu(AdministrationPromoMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
 		SetMenuTitle(menu, "Promote a player :");
 
 		while (results.FetchRow())
@@ -1527,15 +1532,16 @@ public void SQLCallback_AdministrationPromotionMenu(Database db, DBResultSet res
 				char sDisplayString[128];
 				Format(sInfoString, sizeof(sInfoString), "%s;%s;%i", sTempArray[0], sTempArray[1], StringToInt(sTempArray[2]));
 				Format(sDisplayString, sizeof(sDisplayString), "%s (%s)", sTempArray[1], sTempArray[0]);
-				AddMenuItem(menu, sInfoString, sDisplayString, (ga_iRank[client] == GANGRANK_OWNER)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+				menu.AddItem(sInfoString, sDisplayString, (ga_iRank[client] == GANGRANK_OWNER)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 			}
 		}
-		SetMenuExitBackButton(menu, true);
-		DisplayMenu(menu, client, MENU_TIME_FOREVER);
+		menu.ExitBackButton = true;
+
+		menu.Display(client, MENU_TIME_FOREVER);
 	}
 }
 
-public int AdministrationPromoMenu_CallBack(Handle menu, MenuAction action, int param1, int param2)
+public int AdministrationPromoMenu_CallBack(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -1564,23 +1570,24 @@ void OpenPromoteDemoteMenu(int client, const char[] sInfo)
 	char sTempArray[3][32];
 	ExplodeString(sInfo, ";", sTempArray, 3, 32);
 
-	Handle menu = CreateMenu(AdministrationPromoDemoteMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+	Menu menu = CreateMenu(AdministrationPromoDemoteMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
 	SetMenuTitle(menu, "Gang Members Ranks");
 	char sInfoString[32];
 
-	AddMenuItem(menu, "", "Simply click on the desired rank to set", ITEMDRAW_DISABLED);
+	menu.AddItem("", "Simply click on the desired rank to set", ITEMDRAW_DISABLED);
 	
 	Format(sInfoString, sizeof(sInfoString), "%s;normal", sTempArray[0]);
-	AddMenuItem(menu, sInfoString, "Normal", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem(sInfoString, "Normal", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 	Format(sInfoString, sizeof(sInfoString), "%s;admin", sTempArray[0]);
-	AddMenuItem(menu, sInfoString, "Admin", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem(sInfoString, "Admin", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
-public int AdministrationPromoDemoteMenu_CallBack(Handle menu, MenuAction action, int param1, int param2)
+public int AdministrationPromoDemoteMenu_CallBack(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -1645,21 +1652,22 @@ public int AdministrationPromoDemoteMenu_CallBack(Handle menu, MenuAction action
 
 void OpenDisbandMenu(int client)
 {
-	Handle menu = CreateMenu(DisbandMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+	Menu menu = CreateMenu(DisbandMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
 	SetMenuTitle(menu, "Disband Gang");
 
-	AddMenuItem(menu, "", "Are you sure you want to disband your gang?", ITEMDRAW_DISABLED);
-	AddMenuItem(menu, "", "This change is PERMANENT", ITEMDRAW_DISABLED);
+	menu.AddItem("", "Are you sure you want to disband your gang?", ITEMDRAW_DISABLED);
+	menu.AddItem("", "This change is PERMANENT", ITEMDRAW_DISABLED);
 
-	AddMenuItem(menu, "disband", "Disband The Gang", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem("disband", "Disband The Gang", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-	AddMenuItem(menu, "no", "Don't Disband The Gang", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	menu.AddItem("no", "Don't Disband The Gang", (ga_iRank[client] != GANGRANK_OWNER)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
-public int DisbandMenu_CallBack(Handle menu, MenuAction action, int param1, int param2)
+public int DisbandMenu_CallBack(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -1713,7 +1721,7 @@ public void SQLCallback_AdministrationKickMenu(Database db, DBResultSet results,
 	else
 	{
 
-		Handle menu = CreateMenu(AdministrationKickMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
+		Menu menu = CreateMenu(AdministrationKickMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
 		SetMenuTitle(menu, "Kick Gang Members");
 
 		while (results.FetchRow())
@@ -1729,14 +1737,15 @@ public void SQLCallback_AdministrationKickMenu(Database db, DBResultSet results,
 
 			Format(sInfoString, sizeof(sInfoString), "%s;%s", sTempArray[0], sTempArray[1]);
 			Format(sDisplayString, sizeof(sDisplayString), "%s (%s)", sTempArray[1], sTempArray[0]);
-			AddMenuItem(menu, sInfoString, sDisplayString, (ga_iRank[client] > StringToInt(sTempArray[2]))?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+			menu.AddItem(sInfoString, sDisplayString, (ga_iRank[client] > StringToInt(sTempArray[2]))?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		}
-		SetMenuExitBackButton(menu, true);
-		DisplayMenu(menu, client, MENU_TIME_FOREVER);
+		menu.ExitBackButton = true;
+
+		menu.Display(client, MENU_TIME_FOREVER);
 	}
 }
 
-public int AdministrationKickMenu_CallBack(Handle menu, MenuAction action, int param1, int param2)
+public int AdministrationKickMenu_CallBack(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -1807,8 +1816,8 @@ public void SQL_Callback_TopMenu(Database db, DBResultSet results, const char[] 
 	}
 	else
 	{
-		Handle menu = CreateMenu(TopGangsMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
-		SetMenuTitle(menu, "Top Gangs");
+		Menu menu = CreateMenu(TopGangsMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
+		menu.SetTitle("Top Gangs");
 		if (results.RowCount == 0)
 		{
 			PrintToChat(client, "%s \x04There are no gangs created!", TAG);
@@ -1831,11 +1840,12 @@ public void SQL_Callback_TopMenu(Database db, DBResultSet results, const char[] 
 			
 			Format(sInfoString, sizeof(sInfoString), "%i;%s;%i", ga_iTempInt2[client], sGangName, results.FetchInt(2));
 
-			AddMenuItem(menu, sInfoString, sGangName);
+			menu.AddItem(sInfoString, sGangName);
 		}
 
-		SetMenuExitBackButton(menu, true);
-		DisplayMenu(menu, client, MENU_TIME_FOREVER);
+		menu.ExitBackButton = true;
+
+		menu.Display(client, MENU_TIME_FOREVER);
 	}
 }
 
@@ -1896,31 +1906,33 @@ public void SQL_Callback_GangStatistics(Database db, DBResultSet results, const 
 		results.FetchString(2, sTempArray[1], sizeof(sTempArray[]));
 		int iDate = results.FetchInt(6);
 
-		Handle menu = CreateMenu(MenuCallback_Void, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
-		SetMenuTitle(menu, "Top Gangs");
+		Menu menu = CreateMenu(MenuCallback_Void, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
+		menu.SetTitle("Top Gangs");
+		menu.SetTitle("Top Gangs");
 
 		Format(sDisplayString, sizeof(sDisplayString), "Gang Name : %s", sTempArray[0]);
-		AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
+		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
 		Format(sDisplayString, sizeof(sDisplayString), "Gang Rank : %i/%i", ga_iTempInt2[client], g_iGangAmmount);
-		AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
+		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
 		FormatTime(sFormattedTime, sizeof(sFormattedTime), "%x", iDate);
 		Format(sDisplayString, sizeof(sDisplayString), "Date Created : %s", sFormattedTime);
-		AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
+		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
 		Format(sDisplayString, sizeof(sDisplayString), "Created By : %s", sTempArray[1]);
-		AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
+		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
 		Format(sDisplayString, sizeof(sDisplayString), "CT Kills : %i ", ga_iTempInt[client]);
-		AddMenuItem(menu, "", sDisplayString, ITEMDRAW_DISABLED);
+		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
-		SetMenuExitBackButton(menu, true);
-		DisplayMenu(menu, client, MENU_TIME_FOREVER);
+		menu.ExitBackButton = true;
+
+		menu.Display(client, MENU_TIME_FOREVER);
 	}
 }
 
-public int MenuCallback_Void(Handle menu, MenuAction action, int param1, int param2)
+public int MenuCallback_Void(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
