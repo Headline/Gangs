@@ -23,7 +23,7 @@
 #include <hl_gangs>
 
 #define REQUIRE_PLUGIN
-#include <store>
+#include <hl_gangs_credits>
 
 #define PLUGIN_VERSION "1.0b"
 #define TAG " \x03[Gangs]\x01"
@@ -391,8 +391,6 @@ public void OnClientPostAdminCheck(int client)
 {
 	if (gcv_bPluginEnabled.BoolValue)
 	{	
-		GetClientAuthId(client, AuthId_Steam2, ga_sSteamID[client], sizeof(ga_sSteamID[]));
-
 		LoadSteamID(client);
 	}
 }
@@ -2153,12 +2151,12 @@ void DeleteDuplicates()
 
 int GetClientCredits(int client)
 {
-	return Store_GetClientCredits(client);
+	return Gangs_GetCredits(client);
 }
 
 void SetClientCredits(int client, int iAmmount)
 {
-	Store_SetClientCredits(client, iAmmount);
+	Gangs_SetCredits(client, iAmmount);
 }
 
 void RemoveFromGang(int client)
