@@ -33,7 +33,7 @@ public SharedPlugin hl_gangs_credits_include_shared =
 };
 
 #if !defined REQUIRE_PLUGIN
-public hl_gangs_include_shared()
+public hl_gangs_credits_include_shared()
 {	
 	MarkNativeAsOptional("Gangs_GetCredits");
 	MarkNativeAsOptional("Gangs_SetCredits");
