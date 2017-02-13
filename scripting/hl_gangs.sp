@@ -22,7 +22,7 @@
 #include <autoexecconfig>
 #include <hl_gangs>
 
-#define REQUIRE_PLUGIN
+#include <store>
 #include <hl_gangs_credits>
 
 #define PLUGIN_VERSION "1.0b"
@@ -84,6 +84,12 @@ char g_sDatabaseName[60];
 
 public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_max)
 {
+	MarkNativeAsOptional("Store_GetClientCredits");
+	MarkNativeAsOptional("Store_SetClientCredits");
+	MarkNativeAsOptional("Gangs_GetCredits");
+	MarkNativeAsOptional("Gangs_SetCredits");
+
+
 	CreateNative("Gangs_GetDamageModifier", Native_GetDmgModifier);
 	CreateNative("Gangs_GetGangName", Native_GetGangName);
 	CreateNative("Gangs_GetGangRank", Native_GetGangRank);
@@ -2151,12 +2157,27 @@ void DeleteDuplicates()
 
 int GetClientCredits(int client)
 {
-	return Gangs_GetCredits(client);
+	if (LibraryExists("store_zephyrus"))
+	{
+		return Store_GetClientCredits(client);
+	}
+	else
+	{
+		return Gangs_GetCredits(client);
+	}
 }
 
 void SetClientCredits(int client, int iAmmount)
 {
-	Gangs_SetCredits(client, iAmmount);
+	if (LibraryExists("store_zephyrus"))
+	{
+		Store_SetClientCredits(client, iAmmount);
+	}
+	else
+	{
+		Gangs_SetCredits(client, iAmmount);
+	}
+
 }
 
 void RemoveFromGang(int client)

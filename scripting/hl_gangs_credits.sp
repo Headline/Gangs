@@ -162,6 +162,7 @@ public Action Timer_GiveCredits(Handle timer)
 		}
 	}
 }
+
 void LoadSQL(int client)
 {
 	if (!IsValidClient(client))
