@@ -798,7 +798,7 @@ public int GangsMenu_Callback(Menu menu, MenuAction action, int param1, int para
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 
 
@@ -1070,7 +1070,7 @@ public int MemberListMenu_CallBack(Menu menu, MenuAction action, int param1, int
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 
 void OpenIndividualMemberMenu(int client, char[] sInfo)
@@ -1136,7 +1136,7 @@ public int IndividualMemberMenu_Callback(Menu menu, MenuAction action, int param
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 /*****************************************************************
 *********************** INVITATION MENU **************************
@@ -1202,7 +1202,7 @@ public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 
 
@@ -1270,7 +1270,7 @@ public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 
 
@@ -1401,7 +1401,7 @@ public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int para
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 
 
@@ -1457,7 +1457,7 @@ public int LeaveConfirmation_Callback(Menu menu, MenuAction action, int param1, 
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 
 
@@ -1529,7 +1529,7 @@ public int AdministrationMenu_Callback(Menu menu, MenuAction action, int param1,
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 
 
@@ -1613,7 +1613,7 @@ public int AdministrationPromoMenu_CallBack(Menu menu, MenuAction action, int pa
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 
 
@@ -1685,7 +1685,7 @@ public int AdministrationPromoDemoteMenu_CallBack(Menu menu, MenuAction action, 
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 
 
@@ -1741,7 +1741,7 @@ public int DisbandMenu_CallBack(Menu menu, MenuAction action, int param1, int pa
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 
 /*****************************************************************
@@ -1930,7 +1930,7 @@ public int TopGangsMenu_Callback(Menu menu, MenuAction action, int param1, int p
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 
 
@@ -2001,7 +2001,7 @@ public int MenuCallback_Void(Menu menu, MenuAction action, int param1, int param
 			delete menu;
 		}
 	}
-	return 0;
+	return;
 }
 
 /*****************************************************************
