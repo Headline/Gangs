@@ -1,0 +1,41 @@
+sudo: false
+addons:
+  apt_packages:
+  - lib32stdc++6
+env:
+- SMVERSION=1.7
+- SMVERSION=1.8
+- SMVERSION=1.9
+before_script:
+- mkdir build && cd build
+- wget "http://www.sourcemod.net/latest.php?version=$SMVERSION&os=linux" -O sourcemod-$SMVERSION-linux.tar.gz
+- tar -xzf sourcemod-$SMVERSION-linux.tar.gz
+- cd addons/sourcemod/scripting/include
+- wget "https://raw.githubusercontent.com/Impact123/AutoExecConfig/development/autoexecconfig.inc"
+- cd ../../../../..
+- cp hl_gangs.sp build/addons/sourcemod/scripting/
+- cp hl_gangs_credits.sp build/addons/sourcemod/scripting/
+- cd include/
+- cp hl_gangs.inc build/addons/sourcemod/scripting/include/
+- cp hl_gangs_credits.inc build/addons/sourcemod/scripting/include/
+- cd ..
+- cd build/addons/sourcemod/scripting
+- chmod +x spcomp
+script: "./compile.sh hl_gangs.sp && ./compile.sh hl_gangs_credits.sp"
+before_deploy:
+- mkdir -p $TRAVIS_BUILD_DIR/deploy
+- cp -R compiled/* $TRAVIS_BUILD_DIR/deploy
+- cp -R hl_gangs.sp $TRAVIS_BUILD_DIR/deploy
+- cp -R hl_gangs_credits.sp $TRAVIS_BUILD_DIR/deploy
+- cp -R include/hl_gangs.inc $TRAVIS_BUILD_DIR/deploy
+- cp -R include/hl_gangs_credits.inc $TRAVIS_BUILD_DIR/deploy
+- cd $TRAVIS_BUILD_DIR/deploy
+- zip -r hl_gangs.zip .
+deploy:
+  provider: releases
+  api_key:
+    secure: QdGXb5UGG1q8a4Xwu9D5HtQdfPu7jSb1z5ItEyw0o4aLodAMTI9mBynz+58puf+2xLYwbLVCuvoolGPeDfJ5+eNEHMnGGYZe6V6D0SmiLzb01AmQL81/XZFUwgZvLxahTweJ5h2+XwC8/oFzdtZ7I3a1REXbQPP7vDRSEYTBXPJO9HH9K4pIH5P9QqYSEOwEMsmyTmI8DyTgvo+3mHc/1ixVVvQKjoUqzRBFRIAsa9n6/cArgzEz+yFWAyik0ON7G3wfiq1wbOKMn4IWPsZ8eFeUmWhtGaVoc615sM07do4P/9S0GatTyTHhGennFv5+DWFtMAdJL6u1I7qfoHXLoxDgo4hQX5Deylfcr3gXvhstRz9CWLQ6gu3eMU9rcNuBl+MxXrGq63UvLrpwZW1sQxMa99OTlv850F3M0Wrnrw0YWYyavA6sk5MlmcT+mPVyUDI9KDwfNxAl7PqTxLiWFvEeyTAa5F/fZxfX7Bes4hvbvpuhk2zBBuCnK1r4k031h1fnZeKth7ArKYt4lHJfjEv0GI40ikmH+lz78NWBMiW+fEFpzN76cfLAVEwunFyqQWKAVlSvDMgj0v0nz+Ycyb1ENQZvwAN1fUeGn2LJrTj+REZFlAhDQE404p26171rp9fsJozxsWroTaQudCCen6CT87N8V9IpIZxmzPspkNQ=
+  file: hl_gangs.zip
+  on:
+    repo: Headline22/Gangs
+    tags: true
