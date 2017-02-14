@@ -23,11 +23,13 @@ before_script:
 script: "./compile.sh hl_gangs.sp && ./compile.sh hl_gangs_credits.sp"
 before_deploy:
     - mkdir -p $TRAVIS_BUILD_DIR/deploy
-    - cp -R compiled/* $TRAVIS_BUILD_DIR/deploy
-    - cp -R hl_gangs.sp $TRAVIS_BUILD_DIR/deploy
-    - cp -R hl_gangs_credits.sp $TRAVIS_BUILD_DIR/deploy
-    - cp -R include/hl_gangs.inc $TRAVIS_BUILD_DIR/deploy
-    - cp -R include/hl_gangs_credits.inc $TRAVIS_BUILD_DIR/deploy
+    - mkdir -p $TRAVIS_BUILD_DIR/deploy/plugins
+    - mkdir -p $TRAVIS_BUILD_DIR/deploy/scripting/include
+    - cp -R compiled/* $TRAVIS_BUILD_DIR/deploy/plugins
+    - cp -R hl_gangs.sp $TRAVIS_BUILD_DIR/deploy/scripting
+    - cp -R hl_gangs_credits.sp $TRAVIS_BUILD_DIR/deploy/scripting
+    - cp -R include/hl_gangs.inc $TRAVIS_BUILD_DIR/deploy/scripting/include
+    - cp -R include/hl_gangs_credits.inc $TRAVIS_BUILD_DIR/deploy/scripting/include
     - cd $TRAVIS_BUILD_DIR/deploy
     - zip -r hl_gangs.zip .
 deploy:
