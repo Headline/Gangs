@@ -255,9 +255,13 @@ void ResetVariables(int client)
 
 void SetDB()
 {
+	ConVar convar;
 	if (g_hDatabase == null)
 	{
-		view_as<ConVar>(FindConVar("hl_gangs_database_name")).GetString(g_sDatabaseName, sizeof(g_sDatabaseName));
+		convar = FindConVar("hl_gangs_database_name");
+		convar.GetString(g_sDatabaseName, sizeof(g_sDatabaseName));
+		delete convar;
+		
 		Database.Connect(SQLCallback_Connect, g_sDatabaseName);
 	}
 }
