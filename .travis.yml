@@ -15,10 +15,8 @@ before_script:
 - cd ../../../../..
 - cp hl_gangs.sp build/addons/sourcemod/scripting/
 - cp hl_gangs_credits.sp build/addons/sourcemod/scripting/
-- cd include/
-- cp hl_gangs.inc build/addons/sourcemod/scripting/include/
-- cp hl_gangs_credits.inc build/addons/sourcemod/scripting/include/
-- cd ..
+- cp include/hl_gangs.inc build/addons/sourcemod/scripting/include/
+- cp include/hl_gangs_credits.inc build/addons/sourcemod/scripting/include/
 - cd build/addons/sourcemod/scripting
 - chmod +x spcomp
 script: "./compile.sh hl_gangs.sp && ./compile.sh hl_gangs_credits.sp"
@@ -38,4 +36,4 @@ deploy:
   file: hl_gangs.zip
   on:
     repo: Headline22/Gangs
-    tags: true
+    tags: truegs: true
