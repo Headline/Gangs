@@ -18,7 +18,6 @@
 #include <sourcemod>
 #include <sdkhooks>
 #include <cstrike>
-#include <smlib>
 #include <autoexecconfig>
 #include <hl_gangs>
 
