@@ -14,8 +14,12 @@
  * You should have received a copy of the GNU General Public License along with 
  * this program. If not, see http://www.gnu.org/licenses/.
  */
+ 
 #include <sourcemod>
 #include <autoexecconfig>
+
+#define REQUIRE_PLUGIN
+#include <hl_gangs>
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -24,6 +28,7 @@
 
 /* ConVars */
 ConVar gcv_iCreditAmmount;
+ConVar gcv_iIntervalAmmount;
 
 /* Client Vars */
 int ga_iCredits[MAXPLAYERS + 1] = {0, ...};
@@ -91,7 +96,8 @@ public void OnPluginStart()
 	
 	AutoExecConfig_CreateConVar("hl_gangs_credits_version", PLUGIN_VERSION, "Headline's Gangs Plugin : Version", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	
-	gcv_iCreditAmmount = AutoExecConfig_CreateConVar("hl_gangs_credits_ammount", "1", "Credit ammount per minute", FCVAR_NOTIFY, true, 0.0, true, 100.0);
+	gcv_iCreditAmmount = AutoExecConfig_CreateConVar("hl_gangs_credits_ammount", "1", "Credit ammount per interval", FCVAR_NOTIFY, true, 0.0, true, 100.0);
+	gcv_iIntervalAmmount = AutoExecConfig_CreateConVar("hl_gangs_credits_interval", "2", "Interval between credit delieveries (minutes)", FCVAR_NOTIFY, true, 0.0, true, 100.0);
 	
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
@@ -99,7 +105,48 @@ public void OnPluginStart()
 
 	SetDB();
 	
+	RegAdminCmd("sm_givecredits", Command_GiveCredits, ADMFLAG_ROOT, "Gives a player credits!");
+	RegAdminCmd("sm_givecred", Command_GiveCredits, ADMFLAG_ROOT, "Gives a player credits!");
+	RegConsoleCmd("sm_credits", Command_Credits, "View your credits!");
+}
+
+public Action Command_Credits(int client, int args)
+{
+	if (args != 0)
+	{
+		ReplyToCommand(client, "[SM] Usage: sm_credits");
+		return Plugin_Handled;
+	}
+
+	if (!IsValidClient(client))
+	{
+		Gangs_Message(client, "You must be ingame to use this command!");
+		return Plugin_Handled;
+	}
 	
+	Gangs_Message(client, "You have %i credits!", ga_iCredits[client]);
+	return Plugin_Handled;
+}
+public Action Command_GiveCredits(int client, int args)
+{
+	if (args != 2)
+	{
+		ReplyToCommand(client, "[SM] Usage: sm_givecredits <target> <ammount>");
+		return Plugin_Handled;
+	}
+	
+	char sArg1[MAX_NAME_LENGTH];
+	GetCmdArg(1, sArg1, sizeof(sArg1));
+	int target = FindTarget(client, sArg1, true);
+
+	char sArg2[32];
+	GetCmdArg(2, sArg2, sizeof(sArg2));
+	int credits = StringToInt(sArg2);
+	
+	Gangs_Message(client, "%i credits given to %N", credits, target);
+	ga_iCredits[target] += credits;
+	
+	return Plugin_Handled;
 }
 
 public void OnClientPostAdminCheck(int client)
@@ -148,7 +195,7 @@ public void OnConfigsExecuted()
 
 public void OnMapStart()
 {
-	CreateTimer(60.0, Timer_GiveCredits, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer((gcv_iIntervalAmmount.IntValue * 60.0), Timer_GiveCredits, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Action Timer_GiveCredits(Handle timer)
@@ -158,7 +205,7 @@ public Action Timer_GiveCredits(Handle timer)
 		if (IsValidClient(i) && ga_bLoaded[i])
 		{
 			ga_iCredits[i] += gcv_iCreditAmmount.IntValue;
-			PrintToChat(i, "[SM] You have gained %i credits! You now have %i", gcv_iCreditAmmount.IntValue, ga_iCredits[i]);
+			Gangs_Message(i, "You have gained %i credits! You now have %i", gcv_iCreditAmmount.IntValue, ga_iCredits[i]);
 		}
 	}
 }

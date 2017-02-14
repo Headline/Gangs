@@ -13,6 +13,22 @@ enum GangRank
 }
 
 /**
+ * Outputs a formatted message to the client
+ *
+ * @param	client			client index
+ * @return  int				gang size
+ */
+native void Gangs_Message(int client, const char[] format, any ...);
+
+/**
+ * Outputs a formatted message to all clients
+ *
+ * @param	client			client index
+ * @return  int				gang size
+ */
+native void Gangs_MessageToAll(int client, const char[] format, any ...);
+
+/**
  * Returns the size of a client's gang
  *
  * @param	client			client index
@@ -73,5 +89,7 @@ public hl_gangs_include_shared()
 	MarkNativeAsOptional("Gangs_GetGangRank");
 	MarkNativeAsOptional("Gangs_HasGang");
 	MarkNativeAsOptional("Gangs_GetGangSize");
+	MarkNativeAsOptional("Gangs_Message");
+	MarkNativeAsOptional("Gangs_MessageToAll");
 }
 #endif

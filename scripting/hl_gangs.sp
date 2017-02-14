@@ -25,8 +25,8 @@
 #include <store>
 #include <hl_gangs_credits>
 
-#define PLUGIN_VERSION "1.0b"
-#define TAG " \x03[Gangs]\x01"
+#define PLUGIN_VERSION "1.0"
+#define TAG " \x03[Gangs]\x04"
 
 /* Compiler Instructions */
 #pragma semicolon 1
@@ -95,11 +95,41 @@ public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_
 	CreateNative("Gangs_GetGangRank", Native_GetGangRank);
 	CreateNative("Gangs_HasGang", Native_HasGang);
 	CreateNative("Gangs_GetGangSize", Native_GetGangSize);
+	CreateNative("Gangs_Message", Native_Message);
+	CreateNative("Gangs_MessageToAll", Native_MessageToAll);
 
 	RegPluginLibrary("hl_gangs_library");
 
 	g_bLateLoad = bLate;
 	return APLRes_Success;
+}
+
+public int Native_MessageToAll(Handle plugin, int numParams)
+{
+	char phrase[1024];
+	int bytes;
+	
+	FormatNativeString(0, 1, 2, sizeof(phrase), bytes, phrase);
+
+	PrintToChatAll("%s %s", TAG, phrase);
+}
+
+public int Native_Message(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+
+	if (!IsValidClient(client))
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%i)", client);
+	}
+	
+	char phrase[1024];
+	int bytes;
+	
+	FormatNativeString(0, 2, 3, sizeof(phrase), bytes, phrase);
+
+	PrintToChat(client, "%s %s", TAG, phrase);
+	return 0;
 }
 
 public int Native_GetDmgModifier(Handle plugin, int numParams)
@@ -187,7 +217,7 @@ public void OnPluginStart()
 
 	gcv_sDatabase = AutoExecConfig_CreateConVar("hl_gangs_database_name", "hl_gangs", "Name of the database for the plugin.");
 
-	gcv_iMaxGangSize = AutoExecConfig_CreateConVar("hl_gangs_max_size", "6", "Max size for a gang");
+	gcv_iMaxGangSize = AutoExecConfig_CreateConVar("hl_gangs_max_size", "6", "Initial size for a gang");
 
 	gcv_iHealthPrice = AutoExecConfig_CreateConVar("hl_gangs_health_price", "20", "Price of the Health perk");
 
@@ -199,9 +229,9 @@ public void OnPluginStart()
 	
 	gcv_iSizePrice = AutoExecConfig_CreateConVar("hl_gangs_size_price", "20", "Price of the Size perk");
 
-	gcv_iCreateGangPrice = AutoExecConfig_CreateConVar("hl_gangs_creation_price", "100", "Price of gang creation");
+	gcv_iCreateGangPrice = AutoExecConfig_CreateConVar("hl_gangs_creation_price", "20", "Price of gang creation");
 
-	gcv_iRenamePrice = AutoExecConfig_CreateConVar("hl_gangs_rename_price", "100", "Price to rename");	
+	gcv_iRenamePrice = AutoExecConfig_CreateConVar("hl_gangs_rename_price", "40", "Price to rename");	
 	
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
@@ -374,7 +404,7 @@ public void OnClientPutInServer(int client)
 
 public Action Timer_AlertGang(Handle hTimer, int client)
 {
-	PrintToGang(client, false, "%s \x04Gang member \x03%N\x04 has joined the game!", TAG, client);
+	PrintToGang(client, false, "%s Gang member \x03%N\x04 has joined the game!", TAG, client);
 }
 
 
@@ -632,17 +662,17 @@ public Action Command_Accept(int client, int args)
 	}
 	if (ga_bHasGang[client])
 	{
-		ReplyToCommand(client, "%s \x04You are already in a gang!", TAG);
+		ReplyToCommand(client, "%s You are already in a gang!", TAG);
 		return Plugin_Handled;
 	}
 	if (ga_iInvitation[client] == -1)
 	{
-		ReplyToCommand(client, "%s \x04You must be invited first!", TAG);
+		ReplyToCommand(client, "%s You must be invited first!", TAG);
 		return Plugin_Handled;
 	}
 	if (ga_iGangSize[GetClientOfUserId(ga_iInvitation[client])] <= gcv_iMaxGangSize.IntValue + ga_iSize[GetClientOfUserId(ga_iInvitation[client])])
 	{
-		ReplyToCommand(client, "%s \x04That Gang is full!", TAG);
+		ReplyToCommand(client, "%s That Gang is full!", TAG);
 		return Plugin_Handled;
 	}
 
@@ -677,7 +707,7 @@ public Action Command_Gang(int client, int args)
 	}
 	if (GetClientTeam(client) != 2)
 	{
-		ReplyToCommand(client, "%s \x04You must be on the terrorist team to use this!", TAG);
+		ReplyToCommand(client, "%s You must be on the terrorist team to use this!", TAG);
 		return Plugin_Handled;
 	}
 	StartOpeningGangMenu(client);
@@ -823,7 +853,7 @@ void StartGangCreation(int client)
 	}
 	for (int i = 0; i <= 5; i++)
 	{
-		PrintToChat(client, " %s \x04Please type desired gang name in chat!", TAG);
+		PrintToChat(client, " %s Please type desired gang name in chat!", TAG);
 	}
 	ga_bSetName[client] = true;
 }
@@ -844,7 +874,7 @@ public Action OnSay(int client, const char[] command, int args)
 		
 		if (strlen(sFormattedText) > 16)
 		{
-			PrintToChat(client, "%s \x04The name you selected is too long!", TAG);
+			PrintToChat(client, "%s The name you selected is too long!", TAG);
 			return Plugin_Handled;
 		}
 		
@@ -869,7 +899,7 @@ public Action OnSay(int client, const char[] command, int args)
 
 		if (strlen(sFormattedText) > 16)
 		{
-			PrintToChat(client, "%s \x04The name you selected is too long!", TAG);
+			PrintToChat(client, "%s The name you selected is too long!", TAG);
 			return Plugin_Handled;
 		}
 		
@@ -927,13 +957,13 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 
 				CreateTimer(0.2, Timer_OpenGangMenu, client, TIMER_FLAG_NO_MAPCHANGE);
 
-				PrintToChatAll("%s \x04%N\x01 has created \x02%s", TAG, client, ga_sGangName[client]);
+				PrintToChatAll("%s %N\x01 has created \x02%s", TAG, client, ga_sGangName[client]);
 
 				ga_bSetName[client] = false;
 			}
 			else
 			{
-				PrintToChat(client, "%s \x04That name is already used, try again!", TAG);
+				PrintToChat(client, "%s That name is already used, try again!", TAG);
 			}
 		}
 		else if (ga_bRename[client])
@@ -963,7 +993,7 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 
 				g_hDatabase.Query(SQLCallback_Void, sQuery);
 
-				PrintToChatAll("%s \x04%N\x01 has changed the name of \x04%s\x01 to \x04%s", TAG, client, sOldName, sText);
+				PrintToChatAll("%s %N\x01 has changed the name of \x04%s\x01 to \x04%s", TAG, client, sOldName, sText);
 
 				StartOpeningGangMenu(client);
 
@@ -971,7 +1001,7 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 			}
 			else
 			{
-				PrintToChat(client, " %s \x04That name is already used, try again!");
+				PrintToChat(client, " %s That name is already used, try again!");
 			}
 		}
 	}
@@ -1180,12 +1210,12 @@ public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int
 
 			if (ga_iGangSize[param1] >= gcv_iMaxGangSize.IntValue + ga_iSize[param1])
 			{
-				PrintToChat(param1, "%s \x04Your gang is full!");
+				PrintToChat(param1, "%s Your gang is full!");
 			}
 
 			if (!gcv_bInviteStyle.BoolValue)
 			{
-				PrintToChat(GetClientOfUserId(iUserID), "%s \x04Type !accept to join \x02%s\x04!", TAG, ga_sGangName[param1]);
+				PrintToChat(GetClientOfUserId(iUserID), "%s Type !accept to join \x02%s\x04!", TAG, ga_sGangName[param1]);
 			}
 			else
 			{
@@ -1355,7 +1385,7 @@ public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int para
 			{
 				SetClientCredits(param1, GetClientCredits(param1) - gcv_iHealthPrice.IntValue);
 				++ga_iHealth[param1];
-				PrintToGang(param1, true, "%s \x04Health upgrade will be applied next round!", TAG);
+				PrintToGang(param1, true, "%s Health upgrade will be applied next round!", TAG);
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET health=%i WHERE gang=\"%s\"", ga_iHealth[param1], ga_sGangName[param1]);
 			}
 			else if (StrEqual(sInfo, "damage"))
@@ -1368,7 +1398,7 @@ public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int para
 			else if (StrEqual(sInfo, "gravity"))
 			{
 				SetClientCredits(param1, GetClientCredits(param1) - gcv_iGravityPrice.IntValue);
-				PrintToGang(param1, true, "%s \x04Gravity will be applied next round!", TAG);
+				PrintToGang(param1, true, "%s Gravity will be applied next round!", TAG);
 				++ga_iGravity[param1];
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET gravity=%i WHERE gang=\"%s\"", ga_iGravity[param1], ga_sGangName[param1]);
 				SetEntityGravity(param1, GetClientGravityAmmount(param1));
@@ -1507,7 +1537,7 @@ public int AdministrationMenu_Callback(Menu menu, MenuAction action, int param1,
 				SetClientCredits(param1, GetClientCredits(param1) - 100);
 				for (int i = 1; i <= 5; i++)
 				{
-					PrintToChat(param1, " %s \x04Please type desired gang name in chat!", TAG);
+					PrintToChat(param1, " %s Please type desired gang name in chat!", TAG);
 				}
 				ga_bRename[param1] = true;
 			}
@@ -1814,7 +1844,7 @@ public int AdministrationKickMenu_CallBack(Menu menu, MenuAction action, int par
 			Format(sQuery1, sizeof(sQuery1), "DELETE FROM hl_gangs_players WHERE steamid = \"%s\"", sTempArray[0]);
 			g_hDatabase.Query(SQLCallback_Void, sQuery1);
 			
-			PrintToChatAll("%s \x04%s \x01 has been kicked from \x02%s", TAG, sTempArray[1], ga_sGangName[param1]);
+			PrintToChatAll("%s %s \x01 has been kicked from \x02%s", TAG, sTempArray[1], ga_sGangName[param1]);
 			
 			char sSteamID[64];
 			for (int i = 1; i <= MaxClients; i++)
@@ -1872,7 +1902,7 @@ public void SQL_Callback_TopMenu(Database db, DBResultSet results, const char[] 
 		menu.SetTitle("Top Gangs");
 		if (results.RowCount == 0)
 		{
-			PrintToChat(client, "%s \x04There are no gangs created!", TAG);
+			PrintToChat(client, "%s There are no gangs created!", TAG);
 			
 			delete menu;
 			return;
@@ -2194,7 +2224,7 @@ void RemoveFromGang(int client)
 		g_hDatabase.Query(SQLCallback_Void, sQuery1);
 		g_hDatabase.Query(SQLCallback_Void, sQuery2);
 		g_hDatabase.Query(SQLCallback_Void, sQuery3);
-		PrintToChatAll("%s \x04%N\x01 has disbanded \x02%s", TAG, client, ga_sGangName[client]);
+		PrintToChatAll("%s %N\x01 has disbanded \x02%s", TAG, client, ga_sGangName[client]);
 		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (IsValidClient(i) && StrEqual(ga_sGangName[i], ga_sGangName[client]) && i != client)
@@ -2209,7 +2239,7 @@ void RemoveFromGang(int client)
 		char sQuery1[128];
 		Format(sQuery1, sizeof(sQuery1), "DELETE FROM hl_gangs_players WHERE steamid = \"%s\"", ga_sSteamID[client]);
 		g_hDatabase.Query(SQLCallback_Void, sQuery1);
-		PrintToChatAll("%s \x04%N\x01 has left \x02%s", TAG, client, ga_sGangName[client]);
+		PrintToChatAll("%s %N\x01 has left \x02%s", TAG, client, ga_sGangName[client]);
 		ResetVariables(client);
 	}
 }
