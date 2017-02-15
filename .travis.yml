@@ -39,4 +39,3 @@ deploy:
     file: hl_gangs.zip
     on:
         repo: Headline22/Gangs
-        tags: true

@@ -257,6 +257,7 @@ public void OnPluginStart()
 	{
 		if(IsValidClient(i))
 		{
+			LoadSteamID(i);
 			OnClientPutInServer(i);
 		}
 	}
@@ -758,13 +759,13 @@ void OpenGangsMenu(int client)
 	if (ga_bHasGang[client])
 	{
 		char sString[128];
-		Format(sString, sizeof(sString), "[CG] Gangs Menu \nCredits: %i \nCurrent Gang: %s %i/%i", GetClientCredits(client), ga_sGangName[client], ga_iGangSize[client], gcv_iMaxGangSize.IntValue + ga_iSize[client]);
+		Format(sString, sizeof(sString), "Gangs Menu \nCredits: %i \nCurrent Gang: %s %i/%i", GetClientCredits(client), ga_sGangName[client], ga_iGangSize[client], gcv_iMaxGangSize.IntValue + ga_iSize[client]);
 		SetMenuTitle(menu, sString);
 	}
 	else
 	{
 		char sString[128];
-		Format(sString, sizeof(sString), "[CG] Gangs Menu \nCredits: %i \nCurrent Gang: N/A \n ", GetClientCredits(client));
+		Format(sString, sizeof(sString), "Gangs Menu \nCredits: %i \nCurrent Gang: N/A \n ", GetClientCredits(client));
 		SetMenuTitle(menu, sString);
 	}
 	char sDisplayBuffer[128];
@@ -867,6 +868,7 @@ public Action OnSay(int client, const char[] command, int args)
 	{
 		char sText[64], sFormattedText[2*sizeof(sText)+1]; 
 		GetCmdArgString(sText, sizeof(sText));
+		StripQuotes(sText);
 		
 		g_hDatabase.Escape(sText, sFormattedText, sizeof(sFormattedText));
 		TrimString(sFormattedText);
@@ -879,7 +881,7 @@ public Action OnSay(int client, const char[] command, int args)
 		
 		DataPack data = new DataPack();
 		data.WriteCell(client);
-		data.WriteString(sFormattedText);
+		data.WriteString(sText);
 		data.Reset();
 
 		char sQuery[300];
@@ -2040,8 +2042,10 @@ public int MenuCallback_Void(Menu menu, MenuAction action, int param1, int param
 
 void UpdateSQL(int client)
 {
-	if (ga_bHasGang[client] &&ga_bLoaded[client] && !StrEqual(ga_sSteamID[client], "", false))
+	if (ga_bHasGang[client])
 	{
+		GetClientAuthId(client, AuthId_Steam2, ga_sSteamID[client], sizeof(ga_sSteamID[]));
+		
 		char sQuery[300];
 		Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_players WHERE steamid=\"%s\"", ga_sSteamID[client]);
 
