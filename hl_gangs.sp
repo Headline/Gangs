@@ -2118,7 +2118,7 @@ public void SQLCALLBACK_GROUPS(Database db, DBResultSet results, const char[] er
 	char sQuery[300];
 	if (!ga_bIsGangInDatabase[client])
 	{
-		Format(sQuery, sizeof(sQuery), "INSERT INTO hl_gangs_groups (gang, health, damage, gravity, speed) VALUES(\"%s\", %i, %i, %i, %i, %i)", ga_sGangName[client], ga_iHealth[client], ga_iDamage[client], ga_iGravity[client], ga_iSpeed[client], ga_iSize[client]);
+		Format(sQuery, sizeof(sQuery), "INSERT INTO hl_gangs_groups (gang, health, damage, gravity, speed, size) VALUES(\"%s\", %i, %i, %i, %i, %i)", ga_sGangName[client], ga_iHealth[client], ga_iDamage[client], ga_iGravity[client], ga_iSpeed[client], ga_iSize[client]);
 	}
 	else
 	{
