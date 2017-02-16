@@ -479,6 +479,7 @@ public void SQLCallback_Connect(Database db, const char[] error, any data)
 		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_players` (`id` int(20) NOT NULL AUTO_INCREMENT, `steamid` varchar(32) NOT NULL, `playername` varchar(32) NOT NULL, `gang` varchar(32) NOT NULL, `rank` int(16) NOT NULL, `invitedby` varchar(32) NOT NULL, `date` int(32) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
 		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_groups` (`id` int(20) NOT NULL AUTO_INCREMENT, `gang` varchar(32) NOT NULL, `health` int(16) NOT NULL, `damage` int(16) NOT NULL, `gravity` int(16) NOT NULL, `speed` int(16) NOT NULL, `size` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
 		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_statistics` (`id` int(20) NOT NULL AUTO_INCREMENT, `gang` varchar(32) NOT NULL, `ctkills` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
+		g_hDatabase.Query(SQLCallback_Void, "ALTER TABLE `hl_gangs_groups` MODIFY COLUMN `gang` varchar(32) NOT NULL unique", 1);
 	}
 }
 
@@ -2042,6 +2043,8 @@ public int MenuCallback_Void(Menu menu, MenuAction action, int param1, int param
 
 void UpdateSQL(int client)
 {
+	DeleteDuplicates();
+	
 	if (ga_bHasGang[client])
 	{
 		GetClientAuthId(client, AuthId_Steam2, ga_sSteamID[client], sizeof(ga_sSteamID[]));
@@ -2185,6 +2188,7 @@ void DeleteDuplicates()
 	if (g_hDatabase != null)
 	{
 		g_hDatabase.Query(SQLCallback_Void, "delete hl_gangs_players from hl_gangs_players inner join (select min(id) minid, steamid from hl_gangs_players group by steamid having count(1) > 1) as duplicates on (duplicates.steamid = hl_gangs_players.steamid and duplicates.minid <> hl_gangs_players.id)", 4);
+		g_hDatabase.Query(SQLCallback_Void, "delete hl_gangs_groups from hl_gangs_groups inner join (select min(id) minid, gang from hl_gangs_groups group by gang having count(1) > 1) as duplicates on (duplicates.gang = hl_gangs_players.gang and duplicates.minid <> hl_gangs_groups.id)", 4);
 	}
 }
 
