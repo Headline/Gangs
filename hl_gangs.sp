@@ -480,6 +480,8 @@ public void SQLCallback_Connect(Database db, const char[] error, any data)
 		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_groups` (`id` int(20) NOT NULL AUTO_INCREMENT, `gang` varchar(32) NOT NULL, `health` int(16) NOT NULL, `damage` int(16) NOT NULL, `gravity` int(16) NOT NULL, `speed` int(16) NOT NULL, `size` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
 		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_statistics` (`id` int(20) NOT NULL AUTO_INCREMENT, `gang` varchar(32) NOT NULL, `ctkills` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
 		g_hDatabase.Query(SQLCallback_Void, "ALTER TABLE `hl_gangs_groups` MODIFY COLUMN `gang` varchar(32) NOT NULL unique", 1);
+		
+		DeleteDuplicates();
 	}
 }
 
@@ -961,12 +963,13 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 
 				PrintToChatAll("%s %N\x01 has created \x02%s", TAG, client, ga_sGangName[client]);
 
-				ga_bSetName[client] = false;
 			}
 			else
 			{
 				PrintToChat(client, "%s That name is already used, try again!", TAG);
 			}
+			
+			ga_bSetName[client] = false;
 		}
 		else if (ga_bRename[client])
 		{
@@ -999,12 +1002,13 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 
 				StartOpeningGangMenu(client);
 
-				ga_bRename[client] = false;
 			}
 			else
 			{
 				PrintToChat(client, " %s That name is already used, try again!");
 			}
+			
+			ga_bRename[client] = false;
 		}
 	}
 }
@@ -2188,7 +2192,7 @@ void DeleteDuplicates()
 	if (g_hDatabase != null)
 	{
 		g_hDatabase.Query(SQLCallback_Void, "delete hl_gangs_players from hl_gangs_players inner join (select min(id) minid, steamid from hl_gangs_players group by steamid having count(1) > 1) as duplicates on (duplicates.steamid = hl_gangs_players.steamid and duplicates.minid <> hl_gangs_players.id)", 4);
-		g_hDatabase.Query(SQLCallback_Void, "delete hl_gangs_groups from hl_gangs_groups inner join (select min(id) minid, gang from hl_gangs_groups group by gang having count(1) > 1) as duplicates on (duplicates.gang = hl_gangs_players.gang and duplicates.minid <> hl_gangs_groups.id)", 4);
+		g_hDatabase.Query(SQLCallback_Void, "delete hl_gangs_groups from hl_gangs_groups inner join (select min(id) minid, gang from hl_gangs_groups group by gang having count(1) > 1) as duplicates on (duplicates.gang = hl_gangs_groups.gang and duplicates.minid <> hl_gangs_groups.id)", 4);
 	}
 }
 
