@@ -22,6 +22,13 @@ before_script:
     - chmod +x spcomp
 script: "./compile.sh hl_gangs.sp && ./compile.sh hl_gangs_credits.sp"
 before_deploy:
+    - mkdir -p $TRAVIS_BUILD_DIR/translations/
+    - cd $TRAVIS_BUILD_DIR/translations/
+    - wget "http://translator.mitchdempsey.com/sourcemod_plugins/275/download/hl_gangs.translations.zip"
+    - unzip "hl_gangs.translations.zip"
+    - mkdir -p $TRAVIS_BUILD_DIR/deploy/translations
+    - cp -R addons/sourcemod/translations/* $TRAVIS_BUILD_DIR/deploy/translations
+    - cd $TRAVIS_BUILD_DIR/build/addons/sourcemod/scripting
     - mkdir -p $TRAVIS_BUILD_DIR/deploy
     - mkdir -p $TRAVIS_BUILD_DIR/deploy/plugins
     - mkdir -p $TRAVIS_BUILD_DIR/deploy/scripting/include
