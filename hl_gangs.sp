@@ -17,7 +17,6 @@
  
 #include <sourcemod>
 #include <sdkhooks>
-#include <cstrike>
 #include <autoexecconfig>
 #include <hl_gangs>
 
@@ -416,7 +415,7 @@ public Action Timer_AlertGang(Handle hTimer, int client)
 
 public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype) 
 {
-	if (!g_bLR && IsValidClient(attacker) && IsValidClient(victim) && ga_bHasGang[attacker] && attacker != victim && GetClientTeam(victim) == CS_TEAM_CT && GetClientTeam(attacker) == CS_TEAM_T)
+	if (!g_bLR && IsValidClient(attacker) && IsValidClient(victim) && ga_bHasGang[attacker] && attacker != victim && GetClientTeam(victim) == 3 && GetClientTeam(attacker) == 2)
 	{
 		char sWeapon[32];
 		GetClientWeapon(attacker, sWeapon, sizeof(sWeapon)); 
@@ -449,7 +448,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	
 	if (IsValidClient(attacker) && IsValidClient(client) && client != attacker && ga_bHasGang[attacker])
 	{
-		if (GetClientTeam(attacker) == CS_TEAM_T && GetClientTeam(client) == CS_TEAM_CT)
+		if (GetClientTeam(attacker) == 2 && GetClientTeam(client) == 3)
 		{
 			ga_iCTKills[attacker]++;
 			char sQuery[300];
