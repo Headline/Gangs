@@ -203,6 +203,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
+	LoadTranslations("hl_gangs.phrases");
 	LoadTranslations("core.phrases");
 	LoadTranslations("common.phrases");
 	
@@ -396,15 +397,20 @@ public Action RefreshSteamID(Handle hTimer, int iUserID)
 }
 
 public void OnClientPutInServer(int client) 
-{ 
-    SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage); 
+{
+	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage); 
 
-    CreateTimer(2.0, Timer_AlertGang, client, TIMER_FLAG_NO_MAPCHANGE);
-} 
+	if (IsValidClient(client))
+	{
+		CreateTimer(2.0, Timer_AlertGang, client, TIMER_FLAG_NO_MAPCHANGE);
+	}
+}
 
 public Action Timer_AlertGang(Handle hTimer, int client)
 {
-	PrintToGang(client, false, "%s Gang member \x03%N\x04 has joined the game!", TAG, client);
+	char name[MAX_NAME_LENGTH];
+	GetClientName(client, name, sizeof(name));
+	PrintToGang(client, false, "%s %T", TAG, "GangAlert", LANG_SERVER, name);
 }
 
 
@@ -644,38 +650,38 @@ public Action Command_Accept(int client, int args)
 {
 	if (!gcv_bPluginEnabled.BoolValue)
 	{
-		ReplyToCommand(client, "This plugin is disabled!");
+		ReplyToCommand(client, "%t", "DisabledPlugin");
 		return Plugin_Handled;
 	}
 	if (gcv_bInviteStyle.BoolValue)
 	{
-		ReplyToCommand(client, "Accepting via command is disabled!");
+		ReplyToCommand(client, "%t","DisabledAcceptCommand");
 		return Plugin_Handled;
 	}
 
 	if (!IsValidClient(client))
 	{
-		ReplyToCommand(client, "[SM] You must be in-game to use this command!");
+		ReplyToCommand(client, "[SM] %t", "PlayerNotInGame");
 		return Plugin_Handled;
 	}
 	if (GetClientTeam(client) != 2)
 	{
-		ReplyToCommand(client, "[SM] You must be on the terrorist team to use this!");
+		ReplyToCommand(client, "[SM] %t", "WrongTeam");
 		return Plugin_Handled;
 	}
 	if (ga_bHasGang[client])
 	{
-		ReplyToCommand(client, "%s You are already in a gang!", TAG);
+		ReplyToCommand(client, "%s %t", TAG, "AlreadyInGang");
 		return Plugin_Handled;
 	}
 	if (ga_iInvitation[client] == -1)
 	{
-		ReplyToCommand(client, "%s You must be invited first!", TAG);
+		ReplyToCommand(client, "%s %t", TAG, "NotInvited");
 		return Plugin_Handled;
 	}
 	if (ga_iGangSize[GetClientOfUserId(ga_iInvitation[client])] <= gcv_iMaxGangSize.IntValue + ga_iSize[GetClientOfUserId(ga_iInvitation[client])])
 	{
-		ReplyToCommand(client, "%s That Gang is full!", TAG);
+		ReplyToCommand(client, "%s %t", TAG, "GangIsFull");
 		return Plugin_Handled;
 	}
 
@@ -705,12 +711,12 @@ public Action Command_Gang(int client, int args)
 {
 	if (!IsValidClient(client))
 	{
-		ReplyToCommand(client, "[SM] You must be in-game to use this command!");
+		ReplyToCommand(client, "[SM] %t", "PlayerNotInGame");
 		return Plugin_Handled;
 	}
 	if (GetClientTeam(client) != 2)
 	{
-		ReplyToCommand(client, "%s You must be on the terrorist team to use this!", TAG);
+		ReplyToCommand(client, "[SM] %t", "WrongTeam");
 		return Plugin_Handled;
 	}
 	StartOpeningGangMenu(client);
@@ -762,29 +768,47 @@ void OpenGangsMenu(int client)
 	if (ga_bHasGang[client])
 	{
 		char sString[128];
-		Format(sString, sizeof(sString), "Gangs Menu \nCredits: %i \nCurrent Gang: %s %i/%i", GetClientCredits(client), ga_sGangName[client], ga_iGangSize[client], gcv_iMaxGangSize.IntValue + ga_iSize[client]);
+		Format(sString, sizeof(sString), "%T \n%T %i \n%T: %s %i/%i", "GangsMenuTitle", client
+																		, "Credits", client
+																		, GetClientCredits(client)
+																		, "CurrentGang", client
+																		, ga_sGangName[client], ga_iGangSize[client], gcv_iMaxGangSize.IntValue + ga_iSize[client]);
 		SetMenuTitle(menu, sString);
 	}
 	else
 	{
 		char sString[128];
-		Format(sString, sizeof(sString), "Gangs Menu \nCredits: %i \nCurrent Gang: N/A \n ", GetClientCredits(client));
+		Format(sString, sizeof(sString), "%T \n%T: %i \n%T N/A", "GangsMenuTitle", client
+																		, "Credits", client
+																		, GetClientCredits(client)
+																		, "CurrentGang", client);
 		SetMenuTitle(menu, sString);
 	}
 	char sDisplayBuffer[128];
 	
-	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Create a Gang! [%i Credits]", gcv_iCreateGangPrice.IntValue);
+	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i %T]", "CreateAGang", client, gcv_iCreateGangPrice.IntValue, "Credits", client);
 	menu.AddItem("create", sDisplayBuffer, (ga_bHasGang[client] || GetClientCredits(client) < gcv_iCreateGangPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
-	menu.AddItem("invite", "Invite to Gang", (ga_bHasGang[client] && ga_iRank[client] > Rank_Normal && ga_iGangSize[client] < gcv_iMaxGangSize.IntValue + ga_iSize[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	menu.AddItem("members", "Gang Members", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	menu.AddItem("perks", "Gang Perks", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	menu.AddItem("admin", "Gang Admin", (ga_iRank[client] >= Rank_Admin)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	menu.AddItem("leave", "Leave Gang", (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-	menu.AddItem("topgangs", "Top Gangs");
+	
+	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "InviteToGang", client);
+	menu.AddItem("invite", sDisplayBuffer, (ga_bHasGang[client] && ga_iRank[client] > Rank_Normal && ga_iGangSize[client] < gcv_iMaxGangSize.IntValue + ga_iSize[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	
+	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "GangMembers", client);
+	menu.AddItem("members", sDisplayBuffer, (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	
+	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "GangPerks", client);
+	menu.AddItem("perks", sDisplayBuffer, (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	
+	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "GangAdmin", client);
+	menu.AddItem("admin", sDisplayBuffer, (ga_iRank[client] >= Rank_Admin)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	
+	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "LeaveGang", client);
+	menu.AddItem("leave", sDisplayBuffer, (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	
+	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "TopGangs", client);
+	menu.AddItem("topgangs", sDisplayBuffer);
 
 	
 	menu.Display(client, MENU_TIME_FOREVER);
-
 }
 
 public int GangsMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
@@ -846,17 +870,17 @@ void StartGangCreation(int client)
 {
 	if (!IsValidClient(client))
 	{
-		ReplyToCommand(client, "[SM] You must be in-game to use this command!");
+		ReplyToCommand(client, "[SM] %t", "PlayerNotInGame", client);
 		return;
 	}
 	if (GetClientTeam(client) != 2)
 	{
-		ReplyToCommand(client, "[SM] You must be on the terrorist team to use this command!");
+		ReplyToCommand(client, "[SM] %t", "WrongTeam", client);
 		return;
 	}
 	for (int i = 0; i <= 5; i++)
 	{
-		PrintToChat(client, " %s Please type desired gang name in chat!", TAG);
+		PrintToChat(client, "%s %t", TAG, "GangName");
 	}
 	ga_bSetName[client] = true;
 }
@@ -878,7 +902,7 @@ public Action OnSay(int client, const char[] command, int args)
 		
 		if (strlen(sFormattedText) > 16)
 		{
-			PrintToChat(client, "%s The name you selected is too long!", TAG);
+			PrintToChat(client, "%s %t", TAG, "NameTooLong");
 			return Plugin_Handled;
 		}
 		
@@ -903,7 +927,7 @@ public Action OnSay(int client, const char[] command, int args)
 
 		if (strlen(sFormattedText) > 16)
 		{
-			PrintToChat(client, "%s The name you selected is too long!", TAG);
+			PrintToChat(client, "%s %t", TAG, "NameTooLong");
 			return Plugin_Handled;
 		}
 		
@@ -960,13 +984,15 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 				UpdateSQL(client);
 
 				CreateTimer(0.2, Timer_OpenGangMenu, client, TIMER_FLAG_NO_MAPCHANGE);
-
-				PrintToChatAll("%s %N\x01 has created \x02%s", TAG, client, ga_sGangName[client]);
+				
+				char name[MAX_NAME_LENGTH];
+				GetClientName(client, name, sizeof(name));
+				PrintToChatAll("%s %T", TAG, "GangCreated", LANG_SERVER, name, ga_sGangName[client]);
 
 			}
 			else
 			{
-				PrintToChat(client, "%s That name is already used, try again!", TAG);
+				PrintToChat(client, "%s %t", TAG, "NameAlreadyUsed");
 			}
 			
 			ga_bSetName[client] = false;
@@ -998,14 +1024,16 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 
 				g_hDatabase.Query(SQLCallback_Void, sQuery);
 
-				PrintToChatAll("%s %N\x01 has changed the name of \x04%s\x01 to \x04%s", TAG, client, sOldName, sText);
+				char name[MAX_NAME_LENGTH];
+				GetClientName(client, name, sizeof(name));
+				PrintToChatAll("%s %T", TAG, "GangNameChange", LANG_SERVER, name, sOldName, sText);
 
 				StartOpeningGangMenu(client);
 
 			}
 			else
 			{
-				PrintToChat(client, " %s That name is already used, try again!");
+				PrintToChat(client, "%s %t", TAG, "NameAlreadyUsed");
 			}
 			
 			ga_bRename[client] = false;
@@ -1048,9 +1076,11 @@ public void SQLCallback_OpenMembersMenu(Database db, DBResultSet results, const 
 	}
 	else
 	{
-
 		Menu menu = CreateMenu(MemberListMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-		SetMenuTitle(menu, "Member List :");
+		
+		char sTitleString[128];
+		Format(sTitleString, sizeof(sTitleString), "%T", "MemberList", client);
+		SetMenuTitle(menu, sTitleString);
 
 		while (results.FetchRow())
 		{
@@ -1069,15 +1099,15 @@ public void SQLCallback_OpenMembersMenu(Database db, DBResultSet results, const 
 
 			if (StrEqual(a_sTempArray[3], "0"))
 			{
-				Format(sDisplayString, sizeof(sDisplayString), "%s (Member)", a_sTempArray[1]);
+				Format(sDisplayString, sizeof(sDisplayString), "%s (%T)", a_sTempArray[1], "MemberRank", client);
 			}
 			else if (StrEqual(a_sTempArray[3], "1"))
 			{
-				Format(sDisplayString, sizeof(sDisplayString), "%s (Admin)", a_sTempArray[1]);
+				Format(sDisplayString, sizeof(sDisplayString), "%s (%T)", a_sTempArray[1], "AdminRank", client);
 			}
 			else if (StrEqual(a_sTempArray[3], "2"))
 			{
-				Format(sDisplayString, sizeof(sDisplayString), "%s (Owner)", a_sTempArray[1]);
+				Format(sDisplayString, sizeof(sDisplayString), "%s (%T)", a_sTempArray[1], "OwnerRank", client);
 			}
 			menu.AddItem(sInfoString, sDisplayString);
 		}
@@ -1119,33 +1149,33 @@ void OpenIndividualMemberMenu(int client, char[] sInfo)
 
 	ExplodeString(sInfo, ";", sTempArray, 5, sizeof(sTempArray[]));
 
-	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Name : %s", sTempArray[1]);
+	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T %s", "Name", client, sTempArray[1]);
 	menu.AddItem("", sDisplayBuffer, ITEMDRAW_DISABLED);
 
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Steam ID : %s", sTempArray[0]);
 	menu.AddItem("", sDisplayBuffer, ITEMDRAW_DISABLED);
 
-	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Invited By : %s", sTempArray[2]);
+	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T %s", "InvitedBy", client, sTempArray[2]);
 	menu.AddItem("", sDisplayBuffer, ITEMDRAW_DISABLED);
 
 
 	if (StrEqual(sTempArray[3], "0"))
 	{
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Rank : Member");
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T %T", "Rank", client, "MemberRank", client);
 	}
 	else if (StrEqual(sTempArray[3], "1"))
 	{
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Rank : Admin");
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T %T", "Rank", client, "AdminRank", client);
 	}
 	else if (StrEqual(sTempArray[3], "2"))
 	{
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Rank : Owner");
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T %T", "Rank", client, "OwnerRank", client);
 	}
 	menu.AddItem("", sDisplayBuffer, ITEMDRAW_DISABLED);
 
 	char sFormattedTime[64];
 	FormatTime(sFormattedTime, sizeof(sFormattedTime), "%x", StringToInt(sTempArray[4]));
-	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Date Joined : %s", sFormattedTime);
+	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T %s", "DateJoined", client, sFormattedTime);
 
 	menu.AddItem("", sDisplayBuffer, ITEMDRAW_DISABLED);
 
@@ -1183,10 +1213,13 @@ public int IndividualMemberMenu_Callback(Menu menu, MenuAction action, int param
 void OpenInvitationMenu(int client)
 {
 	Menu menu = CreateMenu(InvitationMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
-	SetMenuTitle(menu, "Invite a player!");
-
+	
 	char sInfoString[64];
 	char sDisplayString[64];
+	char sMenuString[32];
+	
+	Format(sMenuString, sizeof(sMenuString), "%T", "InviteToGang", client);
+	SetMenuTitle(menu, sMenuString);
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
@@ -1216,12 +1249,12 @@ public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int
 
 			if (ga_iGangSize[param1] >= gcv_iMaxGangSize.IntValue + ga_iSize[param1])
 			{
-				PrintToChat(param1, "%s Your gang is full!");
+				PrintToChat(param1, "%s %t", TAG, "GangIsFull");
 			}
 
 			if (!gcv_bInviteStyle.BoolValue)
 			{
-				PrintToChat(GetClientOfUserId(iUserID), "%s Type !accept to join \x02%s\x04!", TAG, ga_sGangName[param1]);
+				PrintToChat(GetClientOfUserId(iUserID), "%s %t", TAG, "AcceptInstructions", ga_sGangName[param1]);
 			}
 			else
 			{
@@ -1245,18 +1278,27 @@ public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int
 void OpenGangInvitationMenu(int client)
 {
 	Menu menu = CreateMenu(SentInviteMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
-	SetMenuTitle(menu, "Invite a player!");
 	char sDisplayString[64];
+	char sTitleString[64];
+	
+	Format(sTitleString, sizeof(sTitleString), "%T", "GangInvitation");
+	SetMenuTitle(menu, sTitleString);
 
-	Format(sDisplayString, sizeof(sDisplayString), "%N has invited you to their gang!", GetClientOfUserId(ga_iInvitation[client]));
+	int sender = GetClientOfUserId(ga_iInvitation[client]);
+	char senderName[MAX_NAME_LENGTH];
+	GetClientName(sender, senderName, sizeof(senderName));
+
+	Format(sDisplayString, sizeof(sDisplayString), "%T", "InviteString", client, senderName);
 	menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
-	Format(sDisplayString, sizeof(sDisplayString), "Would you like to join \"%s\"", ga_sGangName[GetClientOfUserId(ga_iInvitation[client])]);
+	Format(sDisplayString, sizeof(sDisplayString), "%T", "WouldYouLikeToJoin", client, ga_sGangName[sender]);
 	menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
-	menu.AddItem("yes", "Yes, I'd like to join");
-
-	menu.AddItem("no", "No, I'd like to decline");
+	Format(sDisplayString, sizeof(sDisplayString), "%T", "IWouldLikeTo", client);
+	menu.AddItem("yes", sDisplayString);
+	
+	Format(sDisplayString, sizeof(sDisplayString), "%T", "IWouldNotLikeTo", client);
+	menu.AddItem("no", sDisplayString);
 
 	menu.Display(client, MENU_TIME_FOREVER);
 }
@@ -1272,25 +1314,31 @@ public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int
 			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 			if (StrEqual(sInfo, "yes"))
 			{
-				ga_sGangName[param1] = ga_sGangName[GetClientOfUserId(ga_iInvitation[param1])];
+				int sender = GetClientOfUserId(ga_iInvitation[param1]);
+				
+				ga_sGangName[param1] = ga_sGangName[sender];
 				ga_iDateJoined[param1] = GetTime();
 				ga_bHasGang[param1] =  true;
 				ga_bSetName[param1] = false;
 				
-				ga_iHealth[param1] = ga_iHealth[GetClientOfUserId(ga_iInvitation[param1])];
-				ga_iDamage[param1] = ga_iDamage[GetClientOfUserId(ga_iInvitation[param1])];
-				ga_iGravity[param1] = ga_iGravity[GetClientOfUserId(ga_iInvitation[param1])];
-				ga_iSpeed[param1] = ga_iSpeed[GetClientOfUserId(ga_iInvitation[param1])];
-				ga_iSize[param1] = ga_iSize[GetClientOfUserId(ga_iInvitation[param1])];
-				ga_iCTKills[param1] = ga_iCTKills[GetClientOfUserId(ga_iInvitation[param1])];
+				ga_iHealth[param1] = ga_iHealth[sender];
+				ga_iDamage[param1] = ga_iDamage[sender];
+				ga_iGravity[param1] = ga_iGravity[sender];
+				ga_iSpeed[param1] = ga_iSpeed[sender];
+				ga_iSize[param1] = ga_iSize[sender];
+				ga_iCTKills[param1] = ga_iCTKills[sender];
 				
 				char sName[MAX_NAME_LENGTH];
-				GetClientName(GetClientOfUserId(ga_iInvitation[param1]), sName, sizeof(sName));
+				GetClientName(sender, sName, sizeof(sName));
 				ga_sInvitedBy[param1] = sName;
 				ga_iGangSize[param1] = 1;
 				ga_iRank[param1] = Rank_Normal;
 				UpdateSQL(param1);
-				PrintToChatAll("%s \x05%N\x04 has joined \x02%s!", TAG, param1, ga_sGangName[param1]);
+				
+				char name[MAX_NAME_LENGTH];
+				GetClientName(param1, name, sizeof(name));
+				
+				PrintToChatAll("%s %T", TAG, "GangJoined", LANG_SERVER, name, ga_sGangName[param1]);
 			}
 			else if (StrEqual(sInfo, "no"))		
 			{
@@ -1341,7 +1389,12 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 	else
 	{
 		Menu menu = CreateMenu(PerksMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
-		SetMenuTitle(menu, "Gang Perks");
+		
+		char sTitleString[64];
+		
+		Format(sTitleString, sizeof(sTitleString), "%T", "GangPerks", client);
+		SetMenuTitle(menu, sTitleString);
+
 		if (results.RowCount == 1 && results.FetchRow())
 		{
 			ga_iHealth[client] = results.FetchInt(0); // Health
@@ -1353,22 +1406,22 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 		
 		char sDisplayBuffer[64];
 
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Health [%i/10] [%i Credits]", ga_iHealth[client], gcv_iHealthPrice.IntValue);
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Health", client, ga_iHealth[client], gcv_iHealthPrice.IntValue, "Credits", client);
 		menu.AddItem("health", sDisplayBuffer, (ga_iHealth[client] >= 10 || GetClientCredits(client) < gcv_iHealthPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Knife Damage [%i/10] [%i Credits]", ga_iDamage[client], gcv_iDamagePrice.IntValue);
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "KnifeDamage", client, ga_iDamage[client], gcv_iDamagePrice.IntValue, "Credits", client);
 		menu.AddItem("damage", sDisplayBuffer, (ga_iDamage[client] >= 10 || GetClientCredits(client) < gcv_iDamagePrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Gravity [%i/10] [%i Credits]", ga_iGravity[client], gcv_iGravityPrice.IntValue);
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Gravity", client, ga_iGravity[client], gcv_iGravityPrice.IntValue, "Credits", client);
 		menu.AddItem("gravity", sDisplayBuffer, (ga_iGravity[client] >= 10 || GetClientCredits(client) < gcv_iGravityPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Speed [%i/10] [%i Credits]", ga_iSpeed[client], gcv_iSpeedPrice.IntValue);
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Speed", client, ga_iSpeed[client], gcv_iSpeedPrice.IntValue, "Credits", client);
 		menu.AddItem("speed", sDisplayBuffer, (ga_iSpeed[client] >= 10 || GetClientCredits(client) < gcv_iSpeedPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "Gang Size [%i/9] [%i Credits]", ga_iSize[client], gcv_iSizePrice.IntValue);
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/9] [%i %T]", "GangSize", client, ga_iSize[client], gcv_iSizePrice.IntValue, "Credits", client);
 		menu.AddItem("size", sDisplayBuffer, (ga_iSize[client] >= 9 || GetClientCredits(client) < gcv_iSizePrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 		menu.ExitBackButton = true;
@@ -1391,20 +1444,20 @@ public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int para
 			{
 				SetClientCredits(param1, GetClientCredits(param1) - gcv_iHealthPrice.IntValue);
 				++ga_iHealth[param1];
-				PrintToGang(param1, true, "%s Health upgrade will be applied next round!", TAG);
+				PrintToGang(param1, true, "%s %T", TAG, "HealthUpgrade", LANG_SERVER);
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET health=%i WHERE gang=\"%s\"", ga_iHealth[param1], ga_sGangName[param1]);
 			}
 			else if (StrEqual(sInfo, "damage"))
 			{
 				SetClientCredits(param1, GetClientCredits(param1) - gcv_iDamagePrice.IntValue);
 				++ga_iDamage[param1];
-				PrintToGang(param1, true, "%s \x02Damage\x04 upgrade has been applied!", TAG);
+				PrintToGang(param1, true, "%s %T", TAG, "DamageUpgrade", LANG_SERVER);
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET damage=%i WHERE gang=\"%s\"",  ga_iDamage[param1], ga_sGangName[param1]);
 			}
 			else if (StrEqual(sInfo, "gravity"))
 			{
 				SetClientCredits(param1, GetClientCredits(param1) - gcv_iGravityPrice.IntValue);
-				PrintToGang(param1, true, "%s Gravity will be applied next round!", TAG);
+				PrintToGang(param1, true, "%s %T", TAG, "GravityUpgrade", LANG_SERVER);
 				++ga_iGravity[param1];
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET gravity=%i WHERE gang=\"%s\"", ga_iGravity[param1], ga_sGangName[param1]);
 				SetEntityGravity(param1, GetClientGravityAmmount(param1));
@@ -1412,7 +1465,7 @@ public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int para
 			else if (StrEqual(sInfo, "speed"))
 			{
 				SetClientCredits(param1, GetClientCredits(param1) - gcv_iSpeedPrice.IntValue);
-				PrintToGang(param1, true, "%s \x05Speed\x04 upgrade has been applied!", TAG);
+				PrintToGang(param1, true, "%s %T", TAG, "SpeedUpgrade", LANG_SERVER);
 				++ga_iSpeed[param1];
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET speed=%i WHERE gang=\"%s\"", ga_iSpeed[param1], ga_sGangName[param1]);
 				SetEntPropFloat(param1, Prop_Send, "m_flLaggedMovementValue", GetClientSpeedAmmount(param1));
@@ -1420,7 +1473,7 @@ public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int para
 			else if (StrEqual(sInfo, "size"))
 			{
 				SetClientCredits(param1, GetClientCredits(param1) - gcv_iSizePrice.IntValue);
-				PrintToGang(param1, true, "%s \x05Size\x04 upgrade has been applied!", TAG);
+				PrintToGang(param1, true, "%s %T", TAG, "SizeUpgrade", LANG_SERVER);
 				++ga_iSize[param1];
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET size=%i WHERE gang=\"%s\"", ga_iSize[param1], ga_sGangName[param1]);
 			}
@@ -1450,16 +1503,25 @@ public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int para
 void OpenLeaveConfirmation(int client)
 {
 	Menu menu = CreateMenu(LeaveConfirmation_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-	SetMenuTitle(menu, "Leave Gang?");
-
-	menu.AddItem("", "Are you sure you want to leave?", ITEMDRAW_DISABLED);
+	
+	char tempBuffer[128];
+	
+	Format(tempBuffer, sizeof(tempBuffer), "%T", "LeaveGang", client);
+	SetMenuTitle(menu, tempBuffer);
+	
+	Format(tempBuffer, sizeof(tempBuffer), "%T", "AreYouSure", client);
+	menu.AddItem("", tempBuffer, ITEMDRAW_DISABLED);
 	if (ga_iRank[client] == Rank_Owner)
 	{
-		menu.AddItem("", "As owner, leaving will disband your gang!", ITEMDRAW_DISABLED);
+		Format(tempBuffer, sizeof(tempBuffer), "%T", "OwnerWarning", client);
+		menu.AddItem("", tempBuffer, ITEMDRAW_DISABLED);
 	}
 
-	menu.AddItem("yes", "Yes, I'd like to leave!");
-	menu.AddItem("no", "No, nevermind.");
+	Format(tempBuffer, sizeof(tempBuffer), "%T", "YesLeave", client);
+	menu.AddItem("yes", tempBuffer);
+	
+	Format(tempBuffer, sizeof(tempBuffer), "%T", "NoLeave", client);
+	menu.AddItem("no", tempBuffer);
 
 	menu.ExitBackButton = true;
 
@@ -1507,17 +1569,24 @@ public int LeaveConfirmation_Callback(Menu menu, MenuAction action, int param1, 
 void OpenAdministrationMenu(int client)
 {
 	Menu menu = CreateMenu(AdministrationMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-	SetMenuTitle(menu, "Gang Admin");
+	
+	char tempBuffer[128];
+	Format(tempBuffer, sizeof(tempBuffer), "%T", "GangAdmin", client);
+	SetMenuTitle(menu, tempBuffer);
+	
 	char sDisplayString[128];
 	
+	Format(sDisplayString, sizeof(sDisplayString), "%T", "KickAMember", client);
 	menu.AddItem("kick", "Kick a member", (ga_iRank[client] == Rank_Normal)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 	
-	Format(sDisplayString, sizeof(sDisplayString), "Rename Gang [%i Credits]", gcv_iRenamePrice.IntValue);
+	Format(sDisplayString, sizeof(sDisplayString), "%T [%i %T]", "RenameGang", client, gcv_iRenamePrice.IntValue, "Credits", client);
 	menu.AddItem("rename", sDisplayString, (ga_iRank[client] == Rank_Owner && GetClientCredits(client) >= gcv_iRenamePrice.IntValue)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 	
-	menu.AddItem("promote", "Promote a member", (ga_iRank[client] == Rank_Normal)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	Format(sDisplayString, sizeof(sDisplayString), "%T", "Promote", client);
+	menu.AddItem("promote", sDisplayString, (ga_iRank[client] == Rank_Normal)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 	
-	menu.AddItem("disband", "Disband gang", (ga_iRank[client] == Rank_Owner)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	Format(sDisplayString, sizeof(sDisplayString), "%T", "Disband", client);
+	menu.AddItem("disband", sDisplayString, (ga_iRank[client] == Rank_Owner)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 
 
 	menu.ExitBackButton = true;
@@ -1543,7 +1612,7 @@ public int AdministrationMenu_Callback(Menu menu, MenuAction action, int param1,
 				SetClientCredits(param1, GetClientCredits(param1) - 100);
 				for (int i = 1; i <= 5; i++)
 				{
-					PrintToChat(param1, " %s Please type desired gang name in chat!", TAG);
+					PrintToChat(param1, "%s %t", TAG, "GangName");
 				}
 				ga_bRename[param1] = true;
 			}
@@ -1602,7 +1671,10 @@ public void SQLCallback_AdministrationPromotionMenu(Database db, DBResultSet res
 	else
 	{
 		Menu menu = CreateMenu(AdministrationPromoMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-		SetMenuTitle(menu, "Promote a player :");
+		
+		char tempBuffer[128];
+		Format(tempBuffer, sizeof(tempBuffer), "%T", "Promote", client);
+		SetMenuTitle(menu, tempBuffer);
 
 		while (results.FetchRow())
 		{
@@ -1659,16 +1731,23 @@ void OpenPromoteDemoteMenu(int client, const char[] sInfo)
 	ExplodeString(sInfo, ";", sTempArray, 3, 32);
 
 	Menu menu = CreateMenu(AdministrationPromoDemoteMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-	SetMenuTitle(menu, "Gang Members Ranks");
+	
+	char tempBuffer[128];
+	Format(tempBuffer, sizeof(tempBuffer), "%T", "GangMembersRanks", client);
+	SetMenuTitle(menu, tempBuffer);
+	
 	char sInfoString[32];
-
-	menu.AddItem("", "Simply click on the desired rank to set", ITEMDRAW_DISABLED);
+	
+	Format(tempBuffer, sizeof(tempBuffer), "%T", "Simply", client);
+	menu.AddItem("", tempBuffer, ITEMDRAW_DISABLED);
 	
 	Format(sInfoString, sizeof(sInfoString), "%s;normal", sTempArray[0]);
-	menu.AddItem(sInfoString, "Normal", (ga_iRank[client] != Rank_Owner)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	Format(tempBuffer, sizeof(tempBuffer), "%T", "MemberRank", client);
+	menu.AddItem(sInfoString, tempBuffer, (ga_iRank[client] != Rank_Owner)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 	Format(sInfoString, sizeof(sInfoString), "%s;admin", sTempArray[0]);
-	menu.AddItem(sInfoString, "Admin", (ga_iRank[client] != Rank_Owner)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	Format(tempBuffer, sizeof(tempBuffer), "%T", "AdminRank", client);
+	menu.AddItem(sInfoString, tempBuffer, (ga_iRank[client] != Rank_Owner)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 	menu.ExitBackButton = true;
 
@@ -1741,14 +1820,20 @@ public int AdministrationPromoDemoteMenu_CallBack(Menu menu, MenuAction action, 
 void OpenDisbandMenu(int client)
 {
 	Menu menu = CreateMenu(DisbandMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-	SetMenuTitle(menu, "Disband Gang");
+	
+	char tempString[128];
+	
+	Format(tempString, sizeof(tempString), "%T", "DisbandGang", client);
+	SetMenuTitle(menu, tempString);
 
-	menu.AddItem("", "Are you sure you want to disband your gang?", ITEMDRAW_DISABLED);
-	menu.AddItem("", "This change is PERMANENT", ITEMDRAW_DISABLED);
+	Format(tempString, sizeof(tempString), "%T", "DisbandConfirmation", client);
+	menu.AddItem("", tempString, ITEMDRAW_DISABLED);
+	
+	Format(tempString, sizeof(tempString), "%T", "YesDisband", client);
+	menu.AddItem("disband", tempString, (ga_iRank[client] != Rank_Owner)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-	menu.AddItem("disband", "Disband The Gang", (ga_iRank[client] != Rank_Owner)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
-
-	menu.AddItem("no", "Don't Disband The Gang", (ga_iRank[client] != Rank_Owner)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+	Format(tempString, sizeof(tempString), "%T", "NoDisband", client);
+	menu.AddItem("no", tempString, (ga_iRank[client] != Rank_Owner)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 	menu.ExitBackButton = true;
 
@@ -1810,7 +1895,11 @@ public void SQLCallback_AdministrationKickMenu(Database db, DBResultSet results,
 	{
 
 		Menu menu = CreateMenu(AdministrationKickMenu_CallBack, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
-		SetMenuTitle(menu, "Kick Gang Members");
+		
+		char tempString[128];
+		
+		Format(tempString, sizeof(tempString), "%T", "KickGangMembers", client);
+		SetMenuTitle(menu, tempString);
 
 		while (results.FetchRow())
 		{
@@ -1850,7 +1939,7 @@ public int AdministrationKickMenu_CallBack(Menu menu, MenuAction action, int par
 			Format(sQuery1, sizeof(sQuery1), "DELETE FROM hl_gangs_players WHERE steamid = \"%s\"", sTempArray[0]);
 			g_hDatabase.Query(SQLCallback_Void, sQuery1);
 			
-			PrintToChatAll("%s %s \x01 has been kicked from \x02%s", TAG, sTempArray[1], ga_sGangName[param1]);
+			PrintToChatAll("%s %T", TAG, "GangMemberKick", LANG_SERVER, sTempArray[1], ga_sGangName[param1]);
 			
 			char sSteamID[64];
 			for (int i = 1; i <= MaxClients; i++)
@@ -1905,10 +1994,13 @@ public void SQL_Callback_TopMenu(Database db, DBResultSet results, const char[] 
 	else
 	{
 		Menu menu = CreateMenu(TopGangsMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
-		menu.SetTitle("Top Gangs");
+		
+		char menuTitle[64];
+		Format(menuTitle, sizeof(menuTitle), "%T", "TopGangs", client);
+		menu.SetTitle(menuTitle);
 		if (results.RowCount == 0)
 		{
-			PrintToChat(client, "%s There are no gangs created!", TAG);
+			PrintToChat(client, "%s %t", TAG, "NoGangs");
 			
 			delete menu;
 			return;
@@ -1996,22 +2088,21 @@ public void SQL_Callback_GangStatistics(Database db, DBResultSet results, const 
 
 		Menu menu = CreateMenu(MenuCallback_Void, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
 		menu.SetTitle("Top Gangs");
-		menu.SetTitle("Top Gangs");
 
-		Format(sDisplayString, sizeof(sDisplayString), "Gang Name : %s", sTempArray[0]);
+		Format(sDisplayString, sizeof(sDisplayString), "%T : %s", "MenuGangName", client, sTempArray[0]);
 		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
-		Format(sDisplayString, sizeof(sDisplayString), "Gang Rank : %i/%i", ga_iTempInt2[client], g_iGangAmmount);
+		Format(sDisplayString, sizeof(sDisplayString), "%T : %i/%i", "GangRank", client, ga_iTempInt2[client], g_iGangAmmount);
 		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
 		FormatTime(sFormattedTime, sizeof(sFormattedTime), "%x", iDate);
-		Format(sDisplayString, sizeof(sDisplayString), "Date Created : %s", sFormattedTime);
+		Format(sDisplayString, sizeof(sDisplayString), "%T : %s", "DateCreated", client, sFormattedTime);
 		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
-		Format(sDisplayString, sizeof(sDisplayString), "Created By : %s", sTempArray[1]);
+		Format(sDisplayString, sizeof(sDisplayString), "%T : %s", "CreatedBy", client, sTempArray[1]);
 		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
-		Format(sDisplayString, sizeof(sDisplayString), "CT Kills : %i ", ga_iTempInt[client]);
+		Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "CTKills", client, ga_iTempInt[client]);
 		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
 		menu.ExitBackButton = true;
@@ -2235,7 +2326,10 @@ void RemoveFromGang(int client)
 		g_hDatabase.Query(SQLCallback_Void, sQuery1);
 		g_hDatabase.Query(SQLCallback_Void, sQuery2);
 		g_hDatabase.Query(SQLCallback_Void, sQuery3);
-		PrintToChatAll("%s %N\x01 has disbanded \x02%s", TAG, client, ga_sGangName[client]);
+		
+		char name[MAX_NAME_LENGTH];
+		GetClientName(client, name, sizeof(name));
+		PrintToChatAll("%s %T", TAG, "GangDisbanded", LANG_SERVER, name, ga_sGangName[client]);
 		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (IsValidClient(i) && StrEqual(ga_sGangName[i], ga_sGangName[client]) && i != client)
@@ -2250,7 +2344,10 @@ void RemoveFromGang(int client)
 		char sQuery1[128];
 		Format(sQuery1, sizeof(sQuery1), "DELETE FROM hl_gangs_players WHERE steamid = \"%s\"", ga_sSteamID[client]);
 		g_hDatabase.Query(SQLCallback_Void, sQuery1);
-		PrintToChatAll("%s %N\x01 has left \x02%s", TAG, client, ga_sGangName[client]);
+		
+		char name[MAX_NAME_LENGTH];
+		GetClientName(client, name, sizeof(name));
+		PrintToChatAll("%s %T", TAG, "LeftGang", LANG_SERVER, name, ga_sGangName[client]);
 		ResetVariables(client);
 	}
 }
@@ -2431,7 +2528,7 @@ void LastRequest()
 			{
 				if (ga_bHasGang[i])
 				{
-					PrintToChat(i, "%s Your gang perks have been disabled!", TAG);
+					PrintToChat(i, "%s %t", TAG, "GangPerksDisabled");
 					if (GetClientHealth(i) > 100)
 					{
 						SetEntProp(i, Prop_Send, "m_iHealth", 100);
