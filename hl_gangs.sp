@@ -524,7 +524,12 @@ public void SQLCallback_CheckSQL_Player(Database db, DBResultSet results, const 
 	{
 		SetDB();
 	}
-	
+	if (results == null)
+	{
+		LogError(error);
+		return;
+	}
+
 	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
@@ -582,7 +587,12 @@ public void SQLCallback_CheckSQL_Groups(Database db, DBResultSet results, const 
 	{
 		SetDB();
 	}
-	
+	if (results == null)
+	{
+		LogError(error);
+		return;
+	}
+
 	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
@@ -613,7 +623,12 @@ public void SQL_Callback_CTKills(Database db, DBResultSet results, const char[] 
 	{
 		SetDB();
 	}
-	
+	if (results == null)
+	{
+		LogError(error);
+		return;
+	}
+
 	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
@@ -747,6 +762,12 @@ public void SQLCallback_OpenGangMenu(Database db, DBResultSet results, const cha
 	if (db == null)
 	{
 		SetDB();
+	}
+	
+	if (results == null)
+	{
+		LogError(error);
+		return;
 	}
 	
 	int client = GetClientOfUserId(data);
@@ -950,6 +971,13 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 	{
 		SetDB();
 	}
+	
+	if (results == null)
+	{
+		LogError(error);
+		return;
+	}
+
 	char sText[64];
 	int client = data.ReadCell();
 	data.ReadString(sText, sizeof(sText));
@@ -1985,6 +2013,13 @@ public void SQL_Callback_TopMenu(Database db, DBResultSet results, const char[] 
 	{
 		SetDB();
 	}
+	
+	if (results == null)
+	{
+		LogError(error);
+		return;
+	}
+
 	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
@@ -2067,6 +2102,13 @@ public void SQL_Callback_GangStatistics(Database db, DBResultSet results, const 
 	{
 		SetDB();
 	}
+	
+	if (results == null)
+	{
+		LogError(error);
+		return;
+	}
+
 	int client = GetClientOfUserId(data);
 	if (!IsValidClient(client))
 	{
@@ -2236,6 +2278,11 @@ public void SQL_Callback_LoadStatistics(Database db, DBResultSet results, const 
 	if (db == null)
 	{
 		SetDB();
+	}
+	if (results == null)
+	{
+		LogError(error);
+		return;
 	}
 
 	int client = GetClientOfUserId(data);
