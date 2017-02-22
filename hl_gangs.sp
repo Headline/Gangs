@@ -1308,7 +1308,7 @@ void OpenGangInvitationMenu(int client)
 	char sDisplayString[64];
 	char sTitleString[64];
 	
-	Format(sTitleString, sizeof(sTitleString), "%T", "GangInvitation");
+	Format(sTitleString, sizeof(sTitleString), "%T", "GangInvitation", client);
 	SetMenuTitle(menu, sTitleString);
 
 	int sender = GetClientOfUserId(ga_iInvitation[client]);
