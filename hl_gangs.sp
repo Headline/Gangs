@@ -928,7 +928,7 @@ public Action OnSay(int client, const char[] command, int args)
 		}
 		else if (strlen(sFormattedText) == 0)
 		{
-			return Plugn_Handled;
+			return Plugin_Handled;
 		}
 		
 		DataPack data = new DataPack();
@@ -957,7 +957,7 @@ public Action OnSay(int client, const char[] command, int args)
 		}
 		else if (strlen(sFormattedText) == 0)
 		{
-			return Plugn_Handled;
+			return Plugin_Handled;
 		}
 		
 		DataPack data = new DataPack();
