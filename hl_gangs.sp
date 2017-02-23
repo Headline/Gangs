@@ -926,6 +926,10 @@ public Action OnSay(int client, const char[] command, int args)
 			PrintToChat(client, "%s %t", TAG, "NameTooLong");
 			return Plugin_Handled;
 		}
+		else if (strlen(sFormattedText) == 0)
+		{
+			return Plugn_Handled;
+		}
 		
 		DataPack data = new DataPack();
 		data.WriteCell(client);
@@ -950,6 +954,10 @@ public Action OnSay(int client, const char[] command, int args)
 		{
 			PrintToChat(client, "%s %t", TAG, "NameTooLong");
 			return Plugin_Handled;
+		}
+		else if (strlen(sFormattedText) == 0)
+		{
+			return Plugn_Handled;
 		}
 		
 		DataPack data = new DataPack();
