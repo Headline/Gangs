@@ -2584,7 +2584,7 @@ void LastRequest()
 			{
 				if (ga_bHasGang[i])
 				{
-					PrintToChat(i, "%s %t", TAG, "GangPerksDisabled");
+					PrintToChat(i, "%s %t", TAG, "GamePerksDisabled");
 					if (GetClientHealth(i) > 100)
 					{
 						SetEntProp(i, Prop_Send, "m_iHealth", 100);
