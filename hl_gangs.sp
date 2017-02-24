@@ -232,6 +232,7 @@ public void OnPluginStart()
 
 	gcv_iRenamePrice = AutoExecConfig_CreateConVar("hl_gangs_rename_price", "40", "Price to rename");	
 	
+	
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
 
@@ -1441,24 +1442,23 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 		}
 		
 		char sDisplayBuffer[64];
+		
+		int price;
+		
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Health", client, ga_iHealth[client], price, "Credits", client);
+		menu.AddItem("health", sDisplayBuffer, (ga_iHealth[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Health", client, ga_iHealth[client], gcv_iHealthPrice.IntValue, "Credits", client);
-		menu.AddItem("health", sDisplayBuffer, (ga_iHealth[client] >= 10 || GetClientCredits(client) < gcv_iHealthPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "KnifeDamage", client, ga_iDamage[client], price, "Credits", client);
+		menu.AddItem("damage", sDisplayBuffer, (ga_iDamage[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Gravity", client, ga_iGravity[client], price, "Credits", client);
+		menu.AddItem("gravity", sDisplayBuffer, (ga_iGravity[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "KnifeDamage", client, ga_iDamage[client], gcv_iDamagePrice.IntValue, "Credits", client);
-		menu.AddItem("damage", sDisplayBuffer, (ga_iDamage[client] >= 10 || GetClientCredits(client) < gcv_iDamagePrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Speed", client, ga_iSpeed[client], price, "Credits", client);
+		menu.AddItem("speed", sDisplayBuffer, (ga_iSpeed[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
-
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Gravity", client, ga_iGravity[client], gcv_iGravityPrice.IntValue, "Credits", client);
-		menu.AddItem("gravity", sDisplayBuffer, (ga_iGravity[client] >= 10 || GetClientCredits(client) < gcv_iGravityPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
-
-
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Speed", client, ga_iSpeed[client], gcv_iSpeedPrice.IntValue, "Credits", client);
-		menu.AddItem("speed", sDisplayBuffer, (ga_iSpeed[client] >= 10 || GetClientCredits(client) < gcv_iSpeedPrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
-
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/9] [%i %T]", "GangSize", client, ga_iSize[client], gcv_iSizePrice.IntValue, "Credits", client);
-		menu.AddItem("size", sDisplayBuffer, (ga_iSize[client] >= 9 || GetClientCredits(client) < gcv_iSizePrice.IntValue)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/9] [%i %T]", "GangSize", client, ga_iSize[client], price, "Credits", client);
+		menu.AddItem("size", sDisplayBuffer, (ga_iSize[client] >= 9 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 
 		menu.ExitBackButton = true;
 
@@ -1478,21 +1478,21 @@ public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int para
 			
 			if (StrEqual(sInfo, "health"))
 			{
-				SetClientCredits(param1, GetClientCredits(param1) - gcv_iHealthPrice.IntValue);
+				SetClientCredits(param1, GetClientCredits(param1) - price);
 				++ga_iHealth[param1];
 				PrintToGang(param1, true, "%s %T", TAG, "HealthUpgrade", LANG_SERVER);
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET health=%i WHERE gang=\"%s\"", ga_iHealth[param1], ga_sGangName[param1]);
 			}
 			else if (StrEqual(sInfo, "damage"))
 			{
-				SetClientCredits(param1, GetClientCredits(param1) - gcv_iDamagePrice.IntValue);
+				SetClientCredits(param1, GetClientCredits(param1) - price);
 				++ga_iDamage[param1];
 				PrintToGang(param1, true, "%s %T", TAG, "DamageUpgrade", LANG_SERVER);
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET damage=%i WHERE gang=\"%s\"",  ga_iDamage[param1], ga_sGangName[param1]);
 			}
 			else if (StrEqual(sInfo, "gravity"))
 			{
-				SetClientCredits(param1, GetClientCredits(param1) - gcv_iGravityPrice.IntValue);
+				SetClientCredits(param1, GetClientCredits(param1) - price);
 				PrintToGang(param1, true, "%s %T", TAG, "GravityUpgrade", LANG_SERVER);
 				++ga_iGravity[param1];
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET gravity=%i WHERE gang=\"%s\"", ga_iGravity[param1], ga_sGangName[param1]);
@@ -1500,7 +1500,7 @@ public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int para
 			}
 			else if (StrEqual(sInfo, "speed"))
 			{
-				SetClientCredits(param1, GetClientCredits(param1) - gcv_iSpeedPrice.IntValue);
+				SetClientCredits(param1, GetClientCredits(param1) - price);
 				PrintToGang(param1, true, "%s %T", TAG, "SpeedUpgrade", LANG_SERVER);
 				++ga_iSpeed[param1];
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET speed=%i WHERE gang=\"%s\"", ga_iSpeed[param1], ga_sGangName[param1]);
@@ -1508,7 +1508,7 @@ public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int para
 			}
 			else if (StrEqual(sInfo, "size"))
 			{
-				SetClientCredits(param1, GetClientCredits(param1) - gcv_iSizePrice.IntValue);
+				SetClientCredits(param1, GetClientCredits(param1) - price);
 				PrintToGang(param1, true, "%s %T", TAG, "SizeUpgrade", LANG_SERVER);
 				++ga_iSize[param1];
 				Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_groups SET size=%i WHERE gang=\"%s\"", ga_iSize[param1], ga_sGangName[param1]);
@@ -1528,7 +1528,6 @@ public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int para
 	}
 	return;
 }
-
 
 
 /*****************************************************************
