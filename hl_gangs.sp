@@ -233,7 +233,7 @@ public void OnPluginStart()
 
 	gcv_iRenamePrice = AutoExecConfig_CreateConVar("hl_gangs_rename_price", "40", "Price to rename");	
 	
-	gcv_iPriceModifier = AutoExecConfig_CreateConVar("hl_gangs_price_modifier", "0", "Price multipliet for perks\n Set 0 to disable");
+	gcv_iPriceModifier = AutoExecConfig_CreateConVar("hl_gangs_price_modifier", "0", "Price multiplier for perks\n Set 0 to disable");
 	
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
