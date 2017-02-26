@@ -43,6 +43,11 @@ ConVar gcv_iCreateGangPrice;
 ConVar gcv_iRenamePrice;
 ConVar gcv_iSizePrice;
 ConVar gcv_iPriceModifier;
+ConVar gcv_bDisableSpeed;
+ConVar gcv_bDisableGravity;
+ConVar gcv_bDisableHealth;
+ConVar gcv_bDisableDamage;
+ConVar gcv_bDisableSize;
 
 /* Gang Globals */
 GangRank ga_iRank[MAXPLAYERS + 1] = {Rank_Invalid, ...};
@@ -236,6 +241,13 @@ public void OnPluginStart()
 	
 	gcv_iPriceModifier = AutoExecConfig_CreateConVar("hl_gangs_price_modifier", "0", "Price modifier for perks\n Set 0 to disable");
 	
+	/* Perk Disabling */
+	gcv_bDisableDamage = AutoExecConfig_CreateConVar("hl_gangs_damage", "0", "Disable the damage perk?\n Set 1 to disable");
+	gcv_bDisableHealth = AutoExecConfig_CreateConVar("hl_gangs_health", "0", "Disable the health perk?\n Set 1 to disable");
+	gcv_bDisableSpeed = AutoExecConfig_CreateConVar("hl_gangs_speed", "0", "Disable the speed perk?\n Set 1 to disable");
+	gcv_bDisableGravity = AutoExecConfig_CreateConVar("hl_gangs_gravity", "0", "Disable the gravity perk?\n Set 1 to disable");
+	gcv_bDisableSize = AutoExecConfig_CreateConVar("hl_gangs_size", "0", "Disable the size perk?\n Set 1 to disable");
+	
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
 
@@ -332,18 +344,18 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	{
 		if (ga_bHasGang[client])
 		{
-			if (ga_iHealth[client] != 0)
+			if (ga_iHealth[client] != 0 && !gcv_bDisableHealth.BoolValue)
 			{
 				int iHealth = ga_iHealth[client] * 1 + 100;
 				SetEntProp(client, Prop_Send, "m_iHealth", iHealth);
 			}
-			if (ga_iGravity[client] != 0)
+			if (ga_iGravity[client] != 0 && !gcv_bDisableGravity.BoolValue)
 			{
 				SetEntityGravity(client, GetClientGravityAmmount(client));
 				ga_iTimer[client] = 0;
 				CreateTimer(0.4, Timer_CheckSetGravity, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE|TIMER_REPEAT);
 			}
-			if (ga_iSpeed[client] != 0)
+			if (ga_iSpeed[client] != 0 && !gcv_bDisableSpeed.BoolValue)
 			{
 				SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", GetClientSpeedAmmount(client));
 			}
@@ -419,6 +431,11 @@ public Action Timer_AlertGang(Handle hTimer, int client)
 
 public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype) 
 {
+	if (gcv_bDisableDamage.BoolValue)
+	{
+		return Plugin_Continue;
+	}
+	
 	if (!g_bLR && IsValidClient(attacker) && IsValidClient(victim) && ga_bHasGang[attacker] && attacker != victim && GetClientTeam(victim) == 3 && GetClientTeam(attacker) == 2)
 	{
 		char sWeapon[32];
@@ -820,8 +837,15 @@ void OpenGangsMenu(int client)
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "GangMembers", client);
 	menu.AddItem("members", sDisplayBuffer, (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 	
-	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "GangPerks", client);
-	menu.AddItem("perks", sDisplayBuffer, (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	if (gcv_bDisableDamage.BoolValue && gcv_bDisableGravity.BoolValue && gcv_bDisableHealth.BoolValue && gcv_bDisableSize.BoolValue && gcv_bDisableSpeed.BoolValue)
+	{
+		// draw nothing
+	}
+	else
+	{
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "GangPerks", client);
+		menu.AddItem("perks", sDisplayBuffer, (ga_bHasGang[client])?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	}
 	
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "GangAdmin", client);
 	menu.AddItem("admin", sDisplayBuffer, (ga_iRank[client] >= Rank_Admin)?ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
@@ -1322,7 +1346,7 @@ public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int
 
 void OpenGangInvitationMenu(int client)
 {
-	if (!IsValidClient(param1))
+	if (!IsValidClient(client))
 	{
 		return;
 	}
@@ -1461,26 +1485,41 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 		
 		int price;
 		
-		price = gcv_iHealthPrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iHealth[client]);
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Health", client, ga_iHealth[client], price, "Credits", client);
-		menu.AddItem("health", sDisplayBuffer, (ga_iHealth[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		if (!gcv_bDisableHealth.BoolValue)
+		{
+			price = gcv_iHealthPrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iHealth[client]);
+			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Health", client, ga_iHealth[client], price, "Credits", client);
+			menu.AddItem("health", sDisplayBuffer, (ga_iHealth[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		}
 
-		price = gcv_iDamagePrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iDamage[client]);
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "KnifeDamage", client, ga_iDamage[client], price, "Credits", client);
-		menu.AddItem("damage", sDisplayBuffer, (ga_iDamage[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		if (!gcv_bDisableDamage.BoolValue)
+		{
+			price = gcv_iDamagePrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iDamage[client]);
+			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "KnifeDamage", client, ga_iDamage[client], price, "Credits", client);
+			menu.AddItem("damage", sDisplayBuffer, (ga_iDamage[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		}
 
-		price = gcv_iGravityPrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iGravity[client]);
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Gravity", client, ga_iGravity[client], price, "Credits", client);
-		menu.AddItem("gravity", sDisplayBuffer, (ga_iGravity[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		if (!gcv_bDisableGravity.BoolValue)
+		{
+			price = gcv_iGravityPrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iGravity[client]);
+			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Gravity", client, ga_iGravity[client], price, "Credits", client);
+			menu.AddItem("gravity", sDisplayBuffer, (ga_iGravity[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		}
+		
+		if (!gcv_bDisableSpeed.BoolValue)
+		{
+			price = gcv_iSpeedPrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iSpeed[client]);
+			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Speed", client, ga_iSpeed[client], price, "Credits", client);
+			menu.AddItem("speed", sDisplayBuffer, (ga_iSpeed[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		}
 
-		price = gcv_iSpeedPrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iSpeed[client]);
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/10] [%i %T]", "Speed", client, ga_iSpeed[client], price, "Credits", client);
-		menu.AddItem("speed", sDisplayBuffer, (ga_iSpeed[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
-
-		price = gcv_iSizePrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iSize[client]);
-		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/9] [%i %T]", "GangSize", client, ga_iSize[client], price, "Credits", client);
-		menu.AddItem("size", sDisplayBuffer, (ga_iSize[client] >= 9 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
-
+		if (!gcv_bDisableSize.BoolValue)
+		{
+			price = gcv_iSizePrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iSize[client]);
+			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/9] [%i %T]", "GangSize", client, ga_iSize[client], price, "Credits", client);
+			menu.AddItem("size", sDisplayBuffer, (ga_iSize[client] >= 9 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+		}
+		 
 		menu.ExitBackButton = true;
 
 		menu.Display(client, MENU_TIME_FOREVER);
@@ -1633,7 +1672,7 @@ public int LeaveConfirmation_Callback(Menu menu, MenuAction action, int param1, 
 
 void OpenAdministrationMenu(int client)
 {
-	if (!IsValidClient(param1))
+	if (!IsValidClient(client))
 	{
 		return;
 	}
