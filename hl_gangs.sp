@@ -838,6 +838,11 @@ void OpenGangsMenu(int client)
 
 public int GangsMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
 {
+	if (!IsValidClient(param1))
+	{
+		return;
+	}
+	
 	switch (action)
 	{
 		case MenuAction_Select:
@@ -1317,6 +1322,10 @@ public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int
 
 void OpenGangInvitationMenu(int client)
 {
+	if (!IsValidClient(param1))
+	{
+		return;
+	}
 	Menu menu = CreateMenu(SentInviteMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
 	char sDisplayString[64];
 	char sTitleString[64];
@@ -1346,6 +1355,10 @@ void OpenGangInvitationMenu(int client)
 
 public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
 {
+	if (!IsValidClient(param1))
+	{
+		return;
+	}
 	switch (action)
 	{
 		case MenuAction_Select:
@@ -1476,6 +1489,10 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 
 public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int param2)
 {
+	if (!IsValidClient(param1))
+	{
+		return;
+	}
 	switch (action)
 	{
 		case MenuAction_Select:
@@ -1616,6 +1633,10 @@ public int LeaveConfirmation_Callback(Menu menu, MenuAction action, int param1, 
 
 void OpenAdministrationMenu(int client)
 {
+	if (!IsValidClient(param1))
+	{
+		return;
+	}
 	Menu menu = CreateMenu(AdministrationMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem | MenuAction_Cancel);
 	
 	char tempBuffer[128];
@@ -1645,6 +1666,10 @@ void OpenAdministrationMenu(int client)
 
 public int AdministrationMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
 {
+	if (!IsValidClient(param1))
+	{
+		return;
+	}
 	switch (action)
 	{
 		case MenuAction_Select:
