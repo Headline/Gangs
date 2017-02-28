@@ -715,29 +715,31 @@ public Action Command_Accept(int client, int args)
 		ReplyToCommand(client, "%s %t", TAG, "NotInvited");
 		return Plugin_Handled;
 	}
-	if (ga_iGangSize[GetClientOfUserId(ga_iInvitation[client])] <= gcv_iMaxGangSize.IntValue + ga_iSize[GetClientOfUserId(ga_iInvitation[client])])
+	
+	int sender = GetClientOfUserId(ga_iInvitation[client]);
+	if (ga_iGangSize[sender] >= gcv_iMaxGangSize.IntValue + ga_iSize[sender])
 	{
 		ReplyToCommand(client, "%s %t", TAG, "GangIsFull");
 		return Plugin_Handled;
 	}
 
-	ga_sGangName[client] = ga_sGangName[GetClientOfUserId(ga_iInvitation[client])];
+	ga_sGangName[client] = ga_sGangName[sender];
 	ga_iDateJoined[client] = GetTime();
 	ga_bHasGang[client] =  true;
 	ga_bSetName[client] = false;
 
 	char sName[MAX_NAME_LENGTH];
-	GetClientName(GetClientOfUserId(ga_iInvitation[client]), sName, sizeof(sName));
+	GetClientName(sender, sName, sizeof(sName));
 	
-	ga_iHealth[client] = ga_iHealth[GetClientOfUserId(ga_iInvitation[client])];
-	ga_iDamage[client] = ga_iDamage[GetClientOfUserId(ga_iInvitation[client])];
-	ga_iGravity[client] = ga_iGravity[GetClientOfUserId(ga_iInvitation[client])];
-	ga_iSpeed[client] = ga_iSpeed[GetClientOfUserId(ga_iInvitation[client])];
-	ga_iCTKills[client] = ga_iCTKills[GetClientOfUserId(ga_iInvitation[client])];
-	ga_iSize[client] = ga_iSize[GetClientOfUserId(ga_iInvitation[client])];
-	
+	ga_iHealth[client] = ga_iHealth[sender];
+	ga_iDamage[client] = ga_iDamage[sender];
+	ga_iGravity[client] = ga_iGravity[sender];
+	ga_iSpeed[client] = ga_iSpeed[sender];
+	ga_iCTKills[client] = ga_iCTKills[sender];
+	ga_iSize[client] = ga_iSize[sender];
+	ga_iGangSize[client] = ++ga_iGangSize[sender];
+
 	ga_sInvitedBy[client] = sName;
-	ga_iGangSize[client] = 1;
 	ga_iRank[client] = Rank_Normal;
 	UpdateSQL(client);
 	return Plugin_Handled;
@@ -1305,7 +1307,7 @@ void OpenInvitationMenu(int client)
 }
 
 public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
-{
+{                    
 	switch (action)
 	{
 		case MenuAction_Select:
@@ -1319,6 +1321,7 @@ public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int
 			if (ga_iGangSize[param1] >= gcv_iMaxGangSize.IntValue + ga_iSize[param1])
 			{
 				PrintToChat(param1, "%s %t", TAG, "GangIsFull");
+				return;
 			}
 
 			if (!gcv_bInviteStyle.BoolValue)
@@ -1393,6 +1396,11 @@ public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int
 			{
 				int sender = GetClientOfUserId(ga_iInvitation[param1]);
 				
+				if (ga_iGangSize[sender] >= gcv_iMaxGangSize.IntValue + ga_iSize[sender])
+				{
+					PrintToChat(param1, "%s %t", TAG, "GangIsFull");
+					return;
+				}
 				ga_sGangName[param1] = ga_sGangName[sender];
 				ga_iDateJoined[param1] = GetTime();
 				ga_bHasGang[param1] =  true;
@@ -1404,11 +1412,12 @@ public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int
 				ga_iSpeed[param1] = ga_iSpeed[sender];
 				ga_iSize[param1] = ga_iSize[sender];
 				ga_iCTKills[param1] = ga_iCTKills[sender];
+				ga_iGangSize[param1] = ++ga_iGangSize[sender];
+
 				
 				char sName[MAX_NAME_LENGTH];
 				GetClientName(sender, sName, sizeof(sName));
 				ga_sInvitedBy[param1] = sName;
-				ga_iGangSize[param1] = 1;
 				ga_iRank[param1] = Rank_Normal;
 				UpdateSQL(param1);
 				
