@@ -7,7 +7,7 @@ If you're running Zephyrus's store plugin, go ahead and throw away hl_gangs_cred
 
 hl_gangs_credits.smx is designed to have a completely simple system and doesn't require a database entry (it uses hl_gang's database)
 ## Installation
-1) Install plugin into sourcemod/plugins directory
+1) Copy all plugin files to their respective places 
 
 2) Add database.cfg entry under hl_gangs (unless you edited the cvar)
 
