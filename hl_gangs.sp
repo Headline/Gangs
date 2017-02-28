@@ -23,7 +23,7 @@
 #include <store>
 #include <hl_gangs_credits>
 
-#define PLUGIN_VERSION "1.0.9"
+#define PLUGIN_VERSION "1.1.0"
 #define TAG " \x03[Gangs]\x04"
 
 /* Compiler Instructions */
