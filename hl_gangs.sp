@@ -263,7 +263,7 @@ public void OnPluginStart()
 
 	/* Forwards */	
 	g_hOnMainMenuCallback = CreateGlobalForward("Gangs_OnMenuCallback", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
-    g_hOnMainMenu = CreateGlobalForward("Gangs_OnMenuCreated", ET_Ignore, Param_Cell, Param_Cell);
+	g_hOnMainMenu = CreateGlobalForward("Gangs_OnMenuCreated", ET_Ignore, Param_Cell, Param_Cell);
 
 
 	/* Events */
