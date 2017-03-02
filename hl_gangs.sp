@@ -1094,7 +1094,7 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 		}
 		else if (ga_bRename[client])
 		{
-			if (results.RowCount != 0)
+			if (results.RowCount == 0)
 			{
 				char sOldName[32];
 				strcopy(sOldName, sizeof(sOldName), ga_sGangName[client]);
