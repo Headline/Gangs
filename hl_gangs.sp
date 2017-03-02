@@ -48,7 +48,7 @@ ConVar gcv_bDisableGravity;
 ConVar gcv_bDisableHealth;
 ConVar gcv_bDisableDamage;
 ConVar gcv_bDisableSize;
-ConVar gcv_iDamageModifier;
+ConVar gcv_fDamageModifier;
 
 /* Forwards */
 Handle g_hOnMainMenu;
@@ -150,7 +150,7 @@ public int Native_GetDmgModifier(Handle plugin, int numParams)
 		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%i)", client);
 	}
 
-	float fDamage = ga_iDamage[client] * gcv_iDamageModifier.IntValue;
+	float fDamage = ga_iDamage[client] * gcv_fDamageModifier.FloatValue;
 	return view_as<int>(fDamage);
 }
 
@@ -246,7 +246,7 @@ public void OnPluginStart()
 	
 	gcv_iPriceModifier = AutoExecConfig_CreateConVar("hl_gangs_price_modifier", "0", "Price modifier for perks\n Set 0 to disable");
 	
-    gcv_iDamageModifier = AutoExecConfig_CreateConVar("hl_gangs_damage_modifier", "1.5", "Knife Damage perk modifier. 1.5 default");	
+	gcv_fDamageModifier = AutoExecConfig_CreateConVar("hl_gangs_damage_modifier", "1.5", "Knife Damage perk modifier. 1.5 default");	
 
 	/* Perk Disabling */
 	gcv_bDisableDamage = AutoExecConfig_CreateConVar("hl_gangs_damage", "0", "Disable the damage perk?\n Set 1 to disable");
@@ -456,7 +456,7 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 		GetClientWeapon(attacker, sWeapon, sizeof(sWeapon)); 
 		if (StrContains(sWeapon, "knife") != -1)
 		{
-			damage = damage + ga_iDamage[attacker] * gcv_iDamageModifier.IntValue;
+			damage = damage + ga_iDamage[attacker] * gcv_fDamageModifier.FloatValue;
 			return Plugin_Changed;
 		}
 	}
@@ -872,10 +872,10 @@ void OpenGangsMenu(int client)
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "TopGangs", client);
 	menu.AddItem("topgangs", sDisplayBuffer);
 
-    Call_StartForward(g_hOnMainMenu);
-    Call_PushCell(client);
-    Call_PushCell(menu);
-    Call_Finish();
+	Call_StartForward(g_hOnMainMenu);
+	Call_PushCell(client);
+	Call_PushCell(menu);
+	Call_Finish();
 
 	
 	menu.Display(client, MENU_TIME_FOREVER);
@@ -883,13 +883,12 @@ void OpenGangsMenu(int client)
 
 public int GangsMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
 {
-
-    Call_StartForward(g_hOnMainMenuCallback);
-    Call_PushCell(menu);
-    Call_PushCell(action);
-    Call_PushCell(param1);
-    Call_PushCell(param2);
-    Call_Finish();
+	Call_StartForward(g_hOnMainMenuCallback);
+	Call_PushCell(menu);
+	Call_PushCell(action);
+	Call_PushCell(param1);
+	Call_PushCell(param2);
+	Call_Finish();
 
 	if (!IsValidClient(param1))
 	{
