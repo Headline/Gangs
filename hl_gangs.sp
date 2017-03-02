@@ -717,7 +717,8 @@ public Action Command_Accept(int client, int args)
 	}
 	
 	int sender = GetClientOfUserId(ga_iInvitation[client]);
-	if (ga_iGangSize[sender] >= gcv_iMaxGangSize.IntValue + ga_iSize[sender])
+	if (ga_iGangSize[sender] >= gcv_iMaxGangSize.IntValue + ga_iSize[sender]
+		&& !gcv_bDisableSize.BoolValue)
 	{
 		ReplyToCommand(client, "%s %t", TAG, "GangIsFull");
 		return Plugin_Handled;
@@ -1318,7 +1319,8 @@ public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int
 
 			ga_iInvitation[GetClientOfUserId(iUserID)] = GetClientUserId(param1);
 
-			if (ga_iGangSize[param1] >= gcv_iMaxGangSize.IntValue + ga_iSize[param1])
+			if (ga_iGangSize[param1] >= gcv_iMaxGangSize.IntValue + ga_iSize[param1]
+				&& !gcv_bDisableSize.BoolValue)
 			{
 				PrintToChat(param1, "%s %t", TAG, "GangIsFull");
 				return;
@@ -1396,7 +1398,8 @@ public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int
 			{
 				int sender = GetClientOfUserId(ga_iInvitation[param1]);
 				
-				if (ga_iGangSize[sender] >= gcv_iMaxGangSize.IntValue + ga_iSize[sender])
+				if (ga_iGangSize[param1] >= gcv_iMaxGangSize.IntValue + ga_iSize[param1]
+					&& !gcv_bDisableSize.BoolValue
 				{
 					PrintToChat(param1, "%s %t", TAG, "GangIsFull");
 					return;
@@ -1522,7 +1525,7 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 			menu.AddItem("speed", sDisplayBuffer, (ga_iSpeed[client] >= 10 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 		}
 
-		if (!gcv_bDisableSize.BoolValue)
+		if (!gcv_bDisableSize.BoolValue && gcv_iMaxGangSize.IntValue != 0)
 		{
 			price = gcv_iSizePrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iSize[client]);
 			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/9] [%i %T]", "GangSize", client, ga_iSize[client], price, "Credits", client);
