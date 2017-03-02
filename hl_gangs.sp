@@ -717,8 +717,7 @@ public Action Command_Accept(int client, int args)
 	}
 	
 	int sender = GetClientOfUserId(ga_iInvitation[client]);
-	if (ga_iGangSize[sender] >= gcv_iMaxGangSize.IntValue + ga_iSize[sender]
-		&& !gcv_bDisableSize.BoolValue)
+	if (ga_iGangSize[sender] >= gcv_iMaxGangSize.IntValue + ga_iSize[sender] && !gcv_bDisableSize.BoolValue)
 	{
 		ReplyToCommand(client, "%s %t", TAG, "GangIsFull");
 		return Plugin_Handled;
@@ -1398,8 +1397,7 @@ public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int
 			{
 				int sender = GetClientOfUserId(ga_iInvitation[param1]);
 				
-				if (ga_iGangSize[param1] >= gcv_iMaxGangSize.IntValue + ga_iSize[param1]
-					&& !gcv_bDisableSize.BoolValue
+				if (ga_iGangSize[param1] >= gcv_iMaxGangSize.IntValue + ga_iSize[param1] && !gcv_bDisableSize.BoolValue
 				{
 					PrintToChat(param1, "%s %t", TAG, "GangIsFull");
 					return;
