@@ -48,6 +48,7 @@ ConVar gcv_bDisableGravity;
 ConVar gcv_bDisableHealth;
 ConVar gcv_bDisableDamage;
 ConVar gcv_bDisableSize;
+ConVar gcv_iDamageModifier;
 
 /* Forwards */
 Handle g_hOnMainMenu;
@@ -149,7 +150,7 @@ public int Native_GetDmgModifier(Handle plugin, int numParams)
 		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%i)", client);
 	}
 
-	float fDamage = ga_iDamage[client] * 1.5;
+	float fDamage = ga_iDamage[client] * gcv_iDamageModifier.IntValue;
 	return view_as<int>(fDamage);
 }
 
@@ -245,6 +246,8 @@ public void OnPluginStart()
 	
 	gcv_iPriceModifier = AutoExecConfig_CreateConVar("hl_gangs_price_modifier", "0", "Price modifier for perks\n Set 0 to disable");
 	
+    gcv_iDamageModifier = AutoExecConfig_CreateConVar("hl_gangs_damage_modifier", "1.5", "Knife Damage perk modifier. 1.5 default");	
+
 	/* Perk Disabling */
 	gcv_bDisableDamage = AutoExecConfig_CreateConVar("hl_gangs_damage", "0", "Disable the damage perk?\n Set 1 to disable");
 	gcv_bDisableHealth = AutoExecConfig_CreateConVar("hl_gangs_health", "0", "Disable the health perk?\n Set 1 to disable");
@@ -453,7 +456,7 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 		GetClientWeapon(attacker, sWeapon, sizeof(sWeapon)); 
 		if (StrContains(sWeapon, "knife") != -1)
 		{
-			damage = damage + ga_iDamage[attacker] * 1.5;
+			damage = damage + ga_iDamage[attacker] * gcv_iDamageModifier.IntValue;
 			return Plugin_Changed;
 		}
 	}
