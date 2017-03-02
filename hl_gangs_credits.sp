@@ -82,7 +82,7 @@ public int Native_SetCredits(Handle plugin, int numParams)
 
  public Plugin myinfo =
 {
-	name = "[CS:GO] Gangs Credits",
+	name = "[ANY] Blank Credits System",
 	author = "Headline",
 	description = "A generic unfeatured credit system",
 	version = PLUGIN_VERSION,
