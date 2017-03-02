@@ -480,7 +480,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	
 	if (IsValidClient(attacker) && IsValidClient(client) && client != attacker && ga_bHasGang[attacker])
 	{
-		if (GetClientTeam(attacker) == 2 && GetClientTeam(client) == 3)
+		if (GetClientTeam(attacker) == 2 && GetClientTeam(client) == 3 && !StrEqual(ga_sGangName[attacker], ga_sGangName[client]))
 		{
 			ga_iCTKills[attacker]++;
 			char sQuery[300];
