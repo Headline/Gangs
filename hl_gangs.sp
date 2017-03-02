@@ -49,6 +49,10 @@ ConVar gcv_bDisableHealth;
 ConVar gcv_bDisableDamage;
 ConVar gcv_bDisableSize;
 
+/* Forwards */
+Handle g_hOnMainMenu;
+Handle g_hOnMainMenuCallback;
+
 /* Gang Globals */
 GangRank ga_iRank[MAXPLAYERS + 1] = {Rank_Invalid, ...};
 int ga_iGangSize[MAXPLAYERS + 1] = {-1, ...};
@@ -253,6 +257,13 @@ public void OnPluginStart()
 
 	gcv_sDatabase.GetString(g_sDatabaseName, sizeof(g_sDatabaseName));
 
+
+	/* Forwards */	
+	g_hOnMainMenuCallback = CreateGlobalForward("Gangs_OnMenuCallback", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
+    g_hOnMainMenu = CreateGlobalForward("Gangs_OnMenuCreated", ET_Ignore, Param_Cell, Param_Cell);
+
+
+	/* Events */
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_death", Event_PlayerDeath, EventHookMode_Post);
 	HookEvent("round_start", Event_RoundStart);
@@ -858,12 +869,25 @@ void OpenGangsMenu(int client)
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "TopGangs", client);
 	menu.AddItem("topgangs", sDisplayBuffer);
 
+    Call_StartForward(g_hOnMainMenu);
+    Call_PushCell(client);
+    Call_PushCell(menu);
+    Call_Finish();
+
 	
 	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int GangsMenu_Callback(Menu menu, MenuAction action, int param1, int param2)
 {
+
+    Call_StartForward(g_hOnMainMenuCallback);
+    Call_PushCell(menu);
+    Call_PushCell(action);
+    Call_PushCell(param1);
+    Call_PushCell(param2);
+    Call_Finish();
+
 	if (!IsValidClient(param1))
 	{
 		return;

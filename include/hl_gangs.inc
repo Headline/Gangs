@@ -68,6 +68,23 @@ native void Gangs_GetGangName(int client, char[] buffer, int maxlength);
  */
 native float Gangs_GetDamageModifier(client);
 
+/**
+ * Called after the menu is built, but before it's displayed.
+ * @param client Player's index.
+ * @param menu Menu being displayed to the client.
+ * @noreturn
+ */
+forward void Gangs_OnMenuCreated(int client, Menu menu);
+
+/**
+ * Called once a menu item has been selected
+ * @param menu Menu displayed
+ * @param action Menu Action
+ * @param param1 client index
+ * @param param2 
+ * @noreturn
+ */
+forward void Gangs_OnMenuCallback(Menu menu, MenuAction action, int param1, int param2);
 
 
 public SharedPlugin hl_gangs_include_shared =
