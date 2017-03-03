@@ -41,6 +41,7 @@ char g_sDatabaseName[60];
 
 /* Plugin Load Status */
 bool g_bLateLoad = false;
+bool g_bGangsEnabled = false;
 
 public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_max)
 {
@@ -92,6 +93,12 @@ public int Native_SetCredits(Handle plugin, int numParams)
 
 public void OnPluginStart()
 {
+	/* Determine if the library exists */
+	g_bGangsEnabled = LibraryExists("hl_gangs_library");
+	
+	/* Don't yell at us if we don't use it */
+	MarkNativeAsOptional("Gangs_Message");
+
 	AutoExecConfig_SetFile("hl_gangs_credits");
 	
 	AutoExecConfig_CreateConVar("hl_gangs_credits_version", PLUGIN_VERSION, "Headline's Gangs Plugin : Version", FCVAR_NOTIFY|FCVAR_DONTRECORD);
@@ -102,12 +109,28 @@ public void OnPluginStart()
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
 
-
+	/* Set DB handle */
 	SetDB();
 	
 	RegAdminCmd("sm_givecredits", Command_GiveCredits, ADMFLAG_ROOT, "Gives a player credits!");
 	RegAdminCmd("sm_givecred", Command_GiveCredits, ADMFLAG_ROOT, "Gives a player credits!");
 	RegConsoleCmd("sm_credits", Command_Credits, "View your credits!");
+}
+
+public void OnLibraryAdded(const char[] name)
+{
+	if (StrEqual(name, "hl_gangs_library"))
+	{
+		g_bGangsEnabled = true;
+	}
+}
+
+public void OnLibraryRemoved(const char[] name)
+{
+	if (StrEqual(name, "hl_gangs_library"))
+	{
+		g_bGangsEnabled = false;
+	}
 }
 
 public Action Command_Credits(int client, int args)
@@ -120,11 +143,26 @@ public Action Command_Credits(int client, int args)
 
 	if (!IsValidClient(client))
 	{
-		Gangs_Message(client, "You must be ingame to use this command!");
+		if (g_bGangsEnabled)
+		{
+			Gangs_Message(client, "You must be ingame to use this command!");
+		}
+		else
+		{
+			PrintToChat(client, "You must be ingame to use this command!");
+		}
 		return Plugin_Handled;
 	}
 	
-	Gangs_Message(client, "You have %i credits!", ga_iCredits[client]);
+	if (g_bGangsEnabled)
+	{
+		Gangs_Message(client, "You have %i credits!", ga_iCredits[client]);
+	}
+	else
+	{
+		PrintToChat(client, "You have %i credits!", ga_iCredits[client]);
+	}
+
 	return Plugin_Handled;
 }
 public Action Command_GiveCredits(int client, int args)
@@ -143,7 +181,15 @@ public Action Command_GiveCredits(int client, int args)
 	GetCmdArg(2, sArg2, sizeof(sArg2));
 	int credits = StringToInt(sArg2);
 	
-	Gangs_Message(client, "%i credits given to %N", credits, target);
+	if (g_bGangsEnabled)
+	{
+		Gangs_Message(client,  "%i credits given to %N", credits, target);
+	}
+	else
+	{
+		PrintToChat(client,  "%i credits given to %N", credits, target);
+	}
+
 	ga_iCredits[target] += credits;
 	
 	return Plugin_Handled;
@@ -205,7 +251,15 @@ public Action Timer_GiveCredits(Handle timer)
 		if (IsValidClient(i) && ga_bLoaded[i])
 		{
 			ga_iCredits[i] += gcv_iCreditAmmount.IntValue;
-			Gangs_Message(i, "You have gained %i credits! You now have %i", gcv_iCreditAmmount.IntValue, ga_iCredits[i]);
+			
+			if (g_bGangsEnabled)
+			{
+				Gangs_Message(i, "You have gained %i credits! You now have %i", gcv_iCreditAmmount.IntValue, ga_iCredits[i]);
+			}
+			else
+			{
+				PrintToChat(i, "You have gained %i credits! You now have %i", gcv_iCreditAmmount.IntValue, ga_iCredits[i]);
+			}
 		}
 	}
 }
@@ -259,8 +313,16 @@ void SetDB()
 	if (g_hDatabase == null)
 	{
 		convar = FindConVar("hl_gangs_database_name");
-		convar.GetString(g_sDatabaseName, sizeof(g_sDatabaseName));
-		delete convar;
+		
+		if (convar == null)
+		{
+			strcopy(g_sDatabaseName, sizeof(g_sDatabaseName), "hl_gangs");
+		}
+		else
+		{
+			convar.GetString(g_sDatabaseName, sizeof(g_sDatabaseName));
+			delete convar;
+		}
 		
 		Database.Connect(SQLCallback_Connect, g_sDatabaseName);
 	}
