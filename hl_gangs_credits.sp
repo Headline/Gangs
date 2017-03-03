@@ -45,6 +45,9 @@ bool g_bGangsEnabled = false;
 
 public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_max)
 {
+	/* Don't yell at us if we don't use it */
+	MarkNativeAsOptional("Gangs_Message");
+
 	RegPluginLibrary("hl_gangs_credits_library");
 
 	CreateNative("Gangs_GetCredits", Native_GetCredits);
@@ -96,9 +99,6 @@ public void OnPluginStart()
 	/* Determine if the library exists */
 	g_bGangsEnabled = LibraryExists("hl_gangs_library");
 	
-	/* Don't yell at us if we don't use it */
-	MarkNativeAsOptional("Gangs_Message");
-
 	AutoExecConfig_SetFile("hl_gangs_credits");
 	
 	AutoExecConfig_CreateConVar("hl_gangs_credits_version", PLUGIN_VERSION, "Headline's Gangs Plugin : Version", FCVAR_NOTIFY|FCVAR_DONTRECORD);
