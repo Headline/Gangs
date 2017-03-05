@@ -69,7 +69,7 @@ native void Gangs_GetGangName(int client, char[] buffer, int maxlength);
 native float Gangs_GetDamageModifier(client);
 
 /**
- * Called after the menu is built, but before it's displayed.
+ * Called after the main menu is built, but before it's displayed.
  * @param client Player's index.
  * @param menu Menu being displayed to the client.
  * @noreturn
@@ -77,7 +77,7 @@ native float Gangs_GetDamageModifier(client);
 forward void Gangs_OnMenuCreated(int client, Menu menu);
 
 /**
- * Called once a menu item has been selected
+ * Called once a main menu item has been selected
  * @param menu Menu displayed
  * @param action Menu Action
  * @param param1 client index
@@ -86,6 +86,25 @@ forward void Gangs_OnMenuCreated(int client, Menu menu);
  */
 forward void Gangs_OnMenuCallback(Menu menu, MenuAction action, int param1, int param2);
 
+/**
+ * Called after the perk menu is built, but before it's displayed.
+ * This is where you can add custom perks. See Gangs_OnPerkMenuCallback
+ *
+ * @param client Player's index.
+ * @param menu Menu being displayed to the client.
+ * @noreturn
+ */
+forward void Gangs_OnPerkMenuCreated(int client, Menu menu);
+
+/**
+ * Called once a perk menu item has been selected
+ * @param menu Menu displayed
+ * @param action Menu Action
+ * @param param1 client index
+ * @param param2 
+ * @noreturn
+ */
+forward void Gangs_OnPerkMenuCallback(Menu menu, MenuAction action, int param1, int param2);
 
 public SharedPlugin hl_gangs_include_shared =
 {

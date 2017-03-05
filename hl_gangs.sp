@@ -53,6 +53,8 @@ ConVar gcv_fDamageModifier;
 /* Forwards */
 Handle g_hOnMainMenu;
 Handle g_hOnMainMenuCallback;
+Handle g_hOnPerkMenu;
+Handle g_hOnPerkMenuCallback;
 
 /* Gang Globals */
 GangRank ga_iRank[MAXPLAYERS + 1] = {Rank_Invalid, ...};
@@ -264,7 +266,8 @@ public void OnPluginStart()
 	/* Forwards */	
 	g_hOnMainMenuCallback = CreateGlobalForward("Gangs_OnMenuCallback", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
 	g_hOnMainMenu = CreateGlobalForward("Gangs_OnMenuCreated", ET_Ignore, Param_Cell, Param_Cell);
-
+	g_hOnPerkMenuCallback = CreateGlobalForward("Gangs_OnPerkMenuCallback", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
+	g_hOnPerkMenu = CreateGlobalForward("Gangs_OnPerkMenuCreated", ET_Ignore, Param_Cell, Param_Cell);
 
 	/* Events */
 	HookEvent("player_spawn", Event_PlayerSpawn);
@@ -1556,6 +1559,12 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 			menu.AddItem("size", sDisplayBuffer, (ga_iSize[client] >= 9 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 		}
 		 
+		 
+		Call_StartForward(g_hOnPerkMenu);
+		Call_PushCell(client);
+		Call_PushCell(menu);
+		Call_Finish();
+
 		menu.ExitBackButton = true;
 
 		menu.Display(client, MENU_TIME_FOREVER);
@@ -1564,6 +1573,13 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 
 public int PerksMenu_CallBack(Menu menu, MenuAction action, int param1, int param2)
 {
+	Call_StartForward(g_hOnPerkMenuCallback);
+	Call_PushCell(menu);
+	Call_PushCell(action);
+	Call_PushCell(param1);
+	Call_PushCell(param2);
+	Call_Finish();
+
 	if (!IsValidClient(param1))
 	{
 		return;
