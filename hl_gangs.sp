@@ -23,7 +23,7 @@
 #include <store>
 #include <hl_gangs_credits>
 
-#define PLUGIN_VERSION "1.1.1"
+#define PLUGIN_VERSION "1.1.2"
 #define TAG " \x03[Gangs]\x04"
 
 /* Compiler Instructions */
@@ -1026,7 +1026,7 @@ public Action OnSay(int client, const char[] command, int args)
 		
 		DataPack data = new DataPack();
 		data.WriteCell(client);
-		data.WriteString(sFormattedText);
+		data.WriteString(sText);
 		data.Reset();
 
 		char sQuery[300];
