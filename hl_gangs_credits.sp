@@ -48,7 +48,7 @@ public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_
 	/* Don't yell at us if we don't use it */
 	MarkNativeAsOptional("Gangs_Message");
 
-	RegPluginLibrary("hl_gangs_credits_library");
+	RegPluginLibrary("hl_gangs_credits");
 
 	CreateNative("Gangs_GetCredits", Native_GetCredits);
 	CreateNative("Gangs_SetCredits", Native_SetCredits);

@@ -13,6 +13,7 @@ before_script:
     - cd addons/sourcemod/scripting/include
     - wget "https://raw.githubusercontent.com/Impact123/AutoExecConfig/development/autoexecconfig.inc"
     - wget "https://raw.githubusercontent.com/dvarnai/store-plugin/master/addons/sourcemod/scripting/include/store.inc"
+    - wget "https://raw.githubusercontent.com/shanapu/MyJailShop/master/addons/sourcemod/scripting/include/myjailshop.inc"
     - cd ../../../../..
     - cp hl_gangs.sp build/addons/sourcemod/scripting/
     - cp hl_gangs_credits.sp build/addons/sourcemod/scripting/

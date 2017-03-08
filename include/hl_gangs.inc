@@ -106,9 +106,9 @@ forward void Gangs_OnPerkMenuCreated(int client, Menu menu);
  */
 forward void Gangs_OnPerkMenuCallback(Menu menu, MenuAction action, int param1, int param2);
 
-public SharedPlugin hl_gangs_include_shared =
+public SharedPlugin __pl_hl_gangs  =
 {
-	name = "[CS:GO] Jailbreak Gangs",
+	name = "hl_gangs",
 	file = "hl_gangs.smx",
 #if defined REQUIRE_PLUGIN
 	required = 1
@@ -118,7 +118,7 @@ public SharedPlugin hl_gangs_include_shared =
 };
 
 #if !defined REQUIRE_PLUGIN
-public hl_gangs_include_shared()
+public __pl_hl_gangs_SetNTVOptional()
 {	
 	MarkNativeAsOptional("Gangs_GetDamageModifier");
 	MarkNativeAsOptional("Gangs_GetGangName");

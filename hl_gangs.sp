@@ -20,10 +20,12 @@
 #include <autoexecconfig>
 #include <hl_gangs>
 
+#undef REQUIRE_PLUGIN
 #include <store>
 #include <hl_gangs_credits>
+#include <myjailshop>
 
-#define PLUGIN_VERSION "1.1.2"
+#define PLUGIN_VERSION "1.1.3"
 #define TAG " \x03[Gangs]\x04"
 
 /* Compiler Instructions */
@@ -81,6 +83,9 @@ bool ga_bIsGangInDatabase[MAXPLAYERS + 1] = {false, ...};
 bool ga_bHasGang[MAXPLAYERS + 1] = {false, ...};
 bool ga_bRename[MAXPLAYERS + 1] = {false, ...};
 bool g_bLR = false;
+bool g_bZepyhrus = false;
+bool g_bShanapu = false;
+bool g_bDefault = false;
 
 float ga_fChangedGravity[MAXPLAYERS + 1] = {0.0, ...};
 
@@ -99,6 +104,8 @@ public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_
 	MarkNativeAsOptional("Store_SetClientCredits");
 	MarkNativeAsOptional("Gangs_GetCredits");
 	MarkNativeAsOptional("Gangs_SetCredits");
+	MarkNativeAsOptional("MyJailShop_SetCredits");
+	MarkNativeAsOptional("MyJailShop_GetCredits");
 
 
 	CreateNative("Gangs_GetDamageModifier", Native_GetDmgModifier);
@@ -109,7 +116,7 @@ public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] sError, int err_
 	CreateNative("Gangs_Message", Native_Message);
 	CreateNative("Gangs_MessageToAll", Native_MessageToAll);
 
-	RegPluginLibrary("hl_gangs_library");
+	RegPluginLibrary("hl_gangs");
 
 	g_bLateLoad = bLate;
 	return APLRes_Success;
@@ -294,6 +301,11 @@ public void OnPluginStart()
 			OnClientPutInServer(i);
 		}
 	}
+	
+	/* Stores */
+	g_bZepyhrus = LibraryExists("store_zephyrus");
+	g_bShanapu = LibraryExists("myjailshop");
+	g_bDefault = LibraryExists("hl_gangs_credits_library");
 }
 
 public void OnClientConnected(int client)
@@ -471,6 +483,38 @@ public void OnClientPostAdminCheck(int client)
 	if (gcv_bPluginEnabled.BoolValue)
 	{	
 		LoadSteamID(client);
+	}
+}
+
+public void OnLibraryAdded(const char[] name)
+{
+	if (StrEqual(name, "store_zephyrus"))
+	{
+		g_bZepyhrus = true;
+	}
+	if (StrEqual(name, "myjailshop"))
+	{
+		g_bShanapu = true;
+	}
+	if (StrEqual(name, "hl_gangs_credits_library"))
+	{
+		g_bDefault = true;
+	}
+}
+
+public void OnLibraryRemoved(const char[] name)
+{
+	if (StrEqual(name, "store_zephyrus"))
+	{
+		g_bZepyhrus = false;
+	}
+	if (StrEqual(name, "myjailshop"))
+	{
+		g_bShanapu = false;
+	}
+	if (StrEqual(name, "hl_gangs_credits_library"))
+	{
+		g_bDefault = false;
 	}
 }
 
@@ -2473,27 +2517,43 @@ void DeleteDuplicates()
 
 int GetClientCredits(int client)
 {
-	if (LibraryExists("store_zephyrus"))
+	if (g_bZepyhrus)
 	{
 		return Store_GetClientCredits(client);
 	}
-	else
+	else if (g_bShanapu)
+	{
+		return MyJailShop_GetCredits(client);
+	}
+	else if (g_bDefault)
 	{
 		return Gangs_GetCredits(client);
+	}
+	else
+	{
+		SetFailState("ERROR: No supported credits plugin loaded!");
+		return 0;
 	}
 }
 
 void SetClientCredits(int client, int iAmmount)
 {
-	if (LibraryExists("store_zephyrus"))
+	if (g_bZepyhrus)
 	{
 		Store_SetClientCredits(client, iAmmount);
 	}
-	else
+	else if (g_bShanapu)
+	{
+		MyJailShop_SetCredits(client, iAmmount);
+	}
+	else if (g_bDefault)
 	{
 		Gangs_SetCredits(client, iAmmount);
 	}
-
+	else
+	{
+		SetFailState("ERROR: No supported credits plugin loaded!");
+	}
 }
 
 void RemoveFromGang(int client)

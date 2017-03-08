@@ -21,9 +21,9 @@ native int Gangs_GetCredits(int client)
 native void Gangs_SetCredits(int client, int ammount);
 
 
-public SharedPlugin hl_gangs_credits_include_shared =
+public SharedPlugin __pl_hl_gangs_credits =
 {
-	name = "[CS:GO] Gangs Credits",
+	name = "hl_gangs_credits",
 	file = "hl_gangs_credits.smx",
 #if defined REQUIRE_PLUGIN
 	required = 1
@@ -33,7 +33,7 @@ public SharedPlugin hl_gangs_credits_include_shared =
 };
 
 #if !defined REQUIRE_PLUGIN
-public hl_gangs_credits_include_shared()
+public __pl_hl_gangs_credits_SetNTVOptional()
 {	
 	MarkNativeAsOptional("Gangs_GetCredits");
 	MarkNativeAsOptional("Gangs_SetCredits");
