@@ -24,6 +24,7 @@
 #include <store>
 #include <hl_gangs_credits>
 #include <myjailshop>
+#include <shop>
 
 #define PLUGIN_VERSION "1.1.3"
 #define TAG " \x03[Gangs]\x04"
@@ -83,16 +84,19 @@ bool ga_bIsGangInDatabase[MAXPLAYERS + 1] = {false, ...};
 bool ga_bHasGang[MAXPLAYERS + 1] = {false, ...};
 bool ga_bRename[MAXPLAYERS + 1] = {false, ...};
 bool g_bLR = false;
+
+/* Supported Store Modules */
 bool g_bZepyhrus = false;
 bool g_bShanapu = false;
 bool g_bDefault = false;
+bool g_bFrozdark = false;
 
-float ga_fChangedGravity[MAXPLAYERS + 1] = {0.0, ...};
 
 /* Player Globals */
 char ga_sSteamID[MAXPLAYERS + 1][30];
 bool g_bLateLoad = false;
 bool ga_bLoaded[MAXPLAYERS + 1] = {false, ...};
+float ga_fChangedGravity[MAXPLAYERS + 1] = {0.0, ...};
 
 /* Database Globals */
 Database g_hDatabase = null;
@@ -304,7 +308,23 @@ public void OnPluginStart()
 	
 	/* Stores */
 	g_bZepyhrus = LibraryExists("store_zephyrus");
+	if (g_bZepyhrus)
+	{
+		return; // Don't bother checking if others exist
+	}
+
 	g_bShanapu = LibraryExists("myjailshop");
+	if (g_bShanapu)
+	{
+		return; // Don't bother checking if others exist
+	}
+
+	g_bFrozdark = LibraryExists("shop");
+	if (g_bFrozdark)
+	{
+		return; // Don't bother checking if others exist
+	}
+
 	g_bDefault = LibraryExists("hl_gangs_credits_library");
 }
 
@@ -492,11 +512,15 @@ public void OnLibraryAdded(const char[] name)
 	{
 		g_bZepyhrus = true;
 	}
-	if (StrEqual(name, "myjailshop"))
+	else if (StrEqual(name, "myjailshop"))
 	{
 		g_bShanapu = true;
 	}
-	if (StrEqual(name, "hl_gangs_credits_library"))
+	else if (StrEqual(name, "shop"))
+	{
+		g_bFrozdark = true;
+	}
+	else if (StrEqual(name, "hl_gangs_credits_library"))
 	{
 		g_bDefault = true;
 	}
@@ -508,11 +532,15 @@ public void OnLibraryRemoved(const char[] name)
 	{
 		g_bZepyhrus = false;
 	}
-	if (StrEqual(name, "myjailshop"))
+	else if (StrEqual(name, "myjailshop"))
 	{
 		g_bShanapu = false;
 	}
-	if (StrEqual(name, "hl_gangs_credits_library"))
+	else if (StrEqual(name, "shop"))
+	{
+		g_bFrozdark = false;
+	}
+	else if (StrEqual(name, "hl_gangs_credits_library"))
 	{
 		g_bDefault = false;
 	}
@@ -2525,6 +2553,10 @@ int GetClientCredits(int client)
 	{
 		return MyJailShop_GetCredits(client);
 	}
+	else if (g_bFrozdark)
+	{
+		return Shop_GetClientCredits(client);
+	}
 	else if (g_bDefault)
 	{
 		return Gangs_GetCredits(client);
@@ -2545,6 +2577,10 @@ void SetClientCredits(int client, int iAmmount)
 	else if (g_bShanapu)
 	{
 		MyJailShop_SetCredits(client, iAmmount);
+	}
+	else if (g_bFrozdark)
+	{
+		Shop_SetClientCredits(client, iAmmount);
 	}
 	else if (g_bDefault)
 	{
