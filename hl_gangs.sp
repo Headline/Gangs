@@ -424,11 +424,7 @@ public Action Timer_CheckSetGravity(Handle hHandle, int iUserid)
 	}
 	else
 	{
-		if(GetEntityGravity(client) == ga_fChangedGravity[client])
-		{
-			// Do nothing
-		}
-		else
+		if(GetEntityGravity(client) != ga_fChangedGravity[client])
 		{
 			SetEntityGravity(client, GetClientGravityAmmount(client));
 			return Plugin_Stop;
@@ -1057,12 +1053,12 @@ public Action OnSay(int client, const char[] command, int args)
 		g_hDatabase.Escape(sText, sFormattedText, sizeof(sFormattedText));
 		TrimString(sFormattedText);
 		
-		if (strlen(sFormattedText) > 16)
+		if (strlen(sText) > 16)
 		{
 			PrintToChat(client, "%s %t", TAG, "NameTooLong");
 			return Plugin_Handled;
 		}
-		else if (strlen(sFormattedText) == 0)
+		else if (strlen(sText) == 0)
 		{
 			return Plugin_Handled;
 		}
@@ -1086,12 +1082,12 @@ public Action OnSay(int client, const char[] command, int args)
 		g_hDatabase.Escape(sText, sFormattedText, sizeof(sFormattedText));
 		TrimString(sFormattedText);
 
-		if (strlen(sFormattedText) > 16)
+		if (strlen(sText) > 16)
 		{
 			PrintToChat(client, "%s %t", TAG, "NameTooLong");
 			return Plugin_Handled;
 		}
-		else if (strlen(sFormattedText) == 0)
+		else if (strlen(sText) == 0)
 		{
 			return Plugin_Handled;
 		}
@@ -2685,51 +2681,7 @@ float GetClientGravityAmmount(int client)
 
 float GetClientSpeedAmmount(int client)
 {
-	float fSpeedAmmount;
-	switch (ga_iSpeed[client])
-	{
-		case 1:
-		{
-			fSpeedAmmount = 1.01;
-		}
-		case 2:
-		{
-			fSpeedAmmount = 1.02;
-		}
-		case 3:
-		{
-			fSpeedAmmount = 1.03;
-		}
-		case 4:
-		{
-			fSpeedAmmount = 1.04;
-		}
-		case 5:
-		{
-			fSpeedAmmount = 1.05;
-		}
-		case 6:
-		{
-			fSpeedAmmount = 1.06;
-		}
-		case 7:
-		{
-			fSpeedAmmount = 1.07;
-		}
-		case 8:
-		{
-			fSpeedAmmount = 1.08;
-		}
-		case 9:
-		{
-			fSpeedAmmount = 1.09;
-		}
-		case 10:
-		{
-			fSpeedAmmount = 1.1;
-		}
-	}
-	return fSpeedAmmount;
+	return (ga_iSpeed[client]/100.0) + 1.0;
 }
 
 void PrintToGang(int client, bool bPrintToClient = false, const char[] sMsg, any ...)
