@@ -26,7 +26,7 @@
 #include <myjailshop>
 #include <shop>
 
-#define PLUGIN_VERSION "1.1.3"
+#define PLUGIN_VERSION "1.1.4"
 #define TAG " \x03[Gangs]\x04"
 
 /* Compiler Instructions */
