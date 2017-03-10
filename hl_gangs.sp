@@ -24,6 +24,7 @@
 #include <store>
 #include <hl_gangs_credits>
 #include <myjailshop>
+#include <shop>
 
 #define PLUGIN_VERSION "1.1.3"
 #define TAG " \x03[Gangs]\x04"
@@ -83,16 +84,19 @@ bool ga_bIsGangInDatabase[MAXPLAYERS + 1] = {false, ...};
 bool ga_bHasGang[MAXPLAYERS + 1] = {false, ...};
 bool ga_bRename[MAXPLAYERS + 1] = {false, ...};
 bool g_bLR = false;
+
+/* Supported Store Modules */
 bool g_bZepyhrus = false;
 bool g_bShanapu = false;
 bool g_bDefault = false;
+bool g_bFrozdark = false;
 
-float ga_fChangedGravity[MAXPLAYERS + 1] = {0.0, ...};
 
 /* Player Globals */
 char ga_sSteamID[MAXPLAYERS + 1][30];
 bool g_bLateLoad = false;
 bool ga_bLoaded[MAXPLAYERS + 1] = {false, ...};
+float ga_fChangedGravity[MAXPLAYERS + 1] = {0.0, ...};
 
 /* Database Globals */
 Database g_hDatabase = null;
@@ -304,7 +308,23 @@ public void OnPluginStart()
 	
 	/* Stores */
 	g_bZepyhrus = LibraryExists("store_zephyrus");
+	if (g_bZepyhrus)
+	{
+		return; // Don't bother checking if others exist
+	}
+
 	g_bShanapu = LibraryExists("myjailshop");
+	if (g_bShanapu)
+	{
+		return; // Don't bother checking if others exist
+	}
+
+	g_bFrozdark = LibraryExists("shop");
+	if (g_bFrozdark)
+	{
+		return; // Don't bother checking if others exist
+	}
+
 	g_bDefault = LibraryExists("hl_gangs_credits_library");
 }
 
@@ -404,11 +424,7 @@ public Action Timer_CheckSetGravity(Handle hHandle, int iUserid)
 	}
 	else
 	{
-		if(GetEntityGravity(client) == ga_fChangedGravity[client])
-		{
-			// Do nothing
-		}
-		else
+		if(GetEntityGravity(client) != ga_fChangedGravity[client])
 		{
 			SetEntityGravity(client, GetClientGravityAmmount(client));
 			return Plugin_Stop;
@@ -492,11 +508,15 @@ public void OnLibraryAdded(const char[] name)
 	{
 		g_bZepyhrus = true;
 	}
-	if (StrEqual(name, "myjailshop"))
+	else if (StrEqual(name, "myjailshop"))
 	{
 		g_bShanapu = true;
 	}
-	if (StrEqual(name, "hl_gangs_credits_library"))
+	else if (StrEqual(name, "shop"))
+	{
+		g_bFrozdark = true;
+	}
+	else if (StrEqual(name, "hl_gangs_credits_library"))
 	{
 		g_bDefault = true;
 	}
@@ -508,11 +528,15 @@ public void OnLibraryRemoved(const char[] name)
 	{
 		g_bZepyhrus = false;
 	}
-	if (StrEqual(name, "myjailshop"))
+	else if (StrEqual(name, "myjailshop"))
 	{
 		g_bShanapu = false;
 	}
-	if (StrEqual(name, "hl_gangs_credits_library"))
+	else if (StrEqual(name, "shop"))
+	{
+		g_bFrozdark = false;
+	}
+	else if (StrEqual(name, "hl_gangs_credits_library"))
 	{
 		g_bDefault = false;
 	}
@@ -1029,12 +1053,12 @@ public Action OnSay(int client, const char[] command, int args)
 		g_hDatabase.Escape(sText, sFormattedText, sizeof(sFormattedText));
 		TrimString(sFormattedText);
 		
-		if (strlen(sFormattedText) > 16)
+		if (strlen(sText) > 16)
 		{
 			PrintToChat(client, "%s %t", TAG, "NameTooLong");
 			return Plugin_Handled;
 		}
-		else if (strlen(sFormattedText) == 0)
+		else if (strlen(sText) == 0)
 		{
 			return Plugin_Handled;
 		}
@@ -1058,12 +1082,12 @@ public Action OnSay(int client, const char[] command, int args)
 		g_hDatabase.Escape(sText, sFormattedText, sizeof(sFormattedText));
 		TrimString(sFormattedText);
 
-		if (strlen(sFormattedText) > 16)
+		if (strlen(sText) > 16)
 		{
 			PrintToChat(client, "%s %t", TAG, "NameTooLong");
 			return Plugin_Handled;
 		}
-		else if (strlen(sFormattedText) == 0)
+		else if (strlen(sText) == 0)
 		{
 			return Plugin_Handled;
 		}
@@ -2525,6 +2549,10 @@ int GetClientCredits(int client)
 	{
 		return MyJailShop_GetCredits(client);
 	}
+	else if (g_bFrozdark)
+	{
+		return Shop_GetClientCredits(client);
+	}
 	else if (g_bDefault)
 	{
 		return Gangs_GetCredits(client);
@@ -2545,6 +2573,10 @@ void SetClientCredits(int client, int iAmmount)
 	else if (g_bShanapu)
 	{
 		MyJailShop_SetCredits(client, iAmmount);
+	}
+	else if (g_bFrozdark)
+	{
+		Shop_SetClientCredits(client, iAmmount);
 	}
 	else if (g_bDefault)
 	{
@@ -2649,51 +2681,7 @@ float GetClientGravityAmmount(int client)
 
 float GetClientSpeedAmmount(int client)
 {
-	float fSpeedAmmount;
-	switch (ga_iSpeed[client])
-	{
-		case 1:
-		{
-			fSpeedAmmount = 1.01;
-		}
-		case 2:
-		{
-			fSpeedAmmount = 1.02;
-		}
-		case 3:
-		{
-			fSpeedAmmount = 1.03;
-		}
-		case 4:
-		{
-			fSpeedAmmount = 1.04;
-		}
-		case 5:
-		{
-			fSpeedAmmount = 1.05;
-		}
-		case 6:
-		{
-			fSpeedAmmount = 1.06;
-		}
-		case 7:
-		{
-			fSpeedAmmount = 1.07;
-		}
-		case 8:
-		{
-			fSpeedAmmount = 1.08;
-		}
-		case 9:
-		{
-			fSpeedAmmount = 1.09;
-		}
-		case 10:
-		{
-			fSpeedAmmount = 1.1;
-		}
-	}
-	return fSpeedAmmount;
+	return (ga_iSpeed[client]/100.0) + 1.0;
 }
 
 void PrintToGang(int client, bool bPrintToClient = false, const char[] sMsg, any ...)

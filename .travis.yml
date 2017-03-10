@@ -14,7 +14,15 @@ before_script:
     - wget "https://raw.githubusercontent.com/Impact123/AutoExecConfig/development/autoexecconfig.inc"
     - wget "https://raw.githubusercontent.com/dvarnai/store-plugin/master/addons/sourcemod/scripting/include/store.inc"
     - wget "https://raw.githubusercontent.com/shanapu/MyJailShop/master/addons/sourcemod/scripting/include/myjailshop.inc"
-    - cd ../../../../..
+    - wget "https://raw.githubusercontent.com/shanapu/MyJailShop/master/addons/sourcemod/scripting/include/shop.inc"
+    - mkdir shop && cd shop
+    - wget "https://raw.githubusercontent.com/shanapu/MyJailShop/master/addons/sourcemod/scripting/include/shop/admin.inc"
+    - wget "https://raw.githubusercontent.com/shanapu/MyJailShop/master/addons/sourcemod/scripting/include/shop/db.inc"
+    - wget "https://raw.githubusercontent.com/shanapu/MyJailShop/master/addons/sourcemod/scripting/include/shop/functions.inc"
+    - wget "https://raw.githubusercontent.com/shanapu/MyJailShop/master/addons/sourcemod/scripting/include/shop/items.inc"
+    - wget "https://raw.githubusercontent.com/shanapu/MyJailShop/master/addons/sourcemod/scripting/include/shop/players.inc"
+    - wget "https://raw.githubusercontent.com/shanapu/MyJailShop/master/addons/sourcemod/scripting/include/shop/register.inc"
+    - cd ../../../../../..
     - cp hl_gangs.sp build/addons/sourcemod/scripting/
     - cp hl_gangs_credits.sp build/addons/sourcemod/scripting/
     - cp include/hl_gangs.inc build/addons/sourcemod/scripting/include/
