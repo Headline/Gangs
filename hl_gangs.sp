@@ -325,7 +325,7 @@ public void OnPluginStart()
 		return; // Don't bother checking if others exist
 	}
 
-	g_bDefault = LibraryExists("hl_gangs_credits_library");
+	g_bDefault = LibraryExists("hl_gangs_credits");
 }
 
 public void OnClientConnected(int client)
