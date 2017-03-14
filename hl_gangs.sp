@@ -307,6 +307,12 @@ public void OnPluginStart()
 	}
 	
 	/* Stores */
+	g_bDefault = LibraryExists("hl_gangs_credits");
+	if (g_bDefault)
+	{
+		return; // Don't bother checking if others exist
+	}
+	
 	g_bZepyhrus = LibraryExists("store_zephyrus");
 	if (g_bZepyhrus)
 	{
@@ -324,8 +330,6 @@ public void OnPluginStart()
 	{
 		return; // Don't bother checking if others exist
 	}
-
-	g_bDefault = LibraryExists("hl_gangs_credits");
 }
 
 public void OnClientConnected(int client)
@@ -516,7 +520,7 @@ public void OnLibraryAdded(const char[] name)
 	{
 		g_bFrozdark = true;
 	}
-	else if (StrEqual(name, "hl_gangs_credits_library"))
+	else if (StrEqual(name, "hl_gangs_credits"))
 	{
 		g_bDefault = true;
 	}
@@ -536,7 +540,7 @@ public void OnLibraryRemoved(const char[] name)
 	{
 		g_bFrozdark = false;
 	}
-	else if (StrEqual(name, "hl_gangs_credits_library"))
+	else if (StrEqual(name, "hl_gangs_credits"))
 	{
 		g_bDefault = false;
 	}
@@ -2541,7 +2545,11 @@ void DeleteDuplicates()
 
 int GetClientCredits(int client)
 {
-	if (g_bZepyhrus)
+	if (g_bDefault)
+	{
+		return Gangs_GetCredits(client);
+	}
+	else if (g_bZepyhrus)
 	{
 		return Store_GetClientCredits(client);
 	}
@@ -2553,10 +2561,6 @@ int GetClientCredits(int client)
 	{
 		return Shop_GetClientCredits(client);
 	}
-	else if (g_bDefault)
-	{
-		return Gangs_GetCredits(client);
-	}
 	else
 	{
 		SetFailState("ERROR: No supported credits plugin loaded!");
@@ -2566,7 +2570,11 @@ int GetClientCredits(int client)
 
 void SetClientCredits(int client, int iAmmount)
 {
-	if (g_bZepyhrus)
+	if (g_bDefault)
+	{
+		Gangs_SetCredits(client, iAmmount);
+	}
+	else if (g_bZepyhrus)
 	{
 		Store_SetClientCredits(client, iAmmount);
 	}
@@ -2577,10 +2585,6 @@ void SetClientCredits(int client, int iAmmount)
 	else if (g_bFrozdark)
 	{
 		Shop_SetClientCredits(client, iAmmount);
-	}
-	else if (g_bDefault)
-	{
-		Gangs_SetCredits(client, iAmmount);
 	}
 	else
 	{
