@@ -466,12 +466,19 @@ public void OnClientPutInServer(int client)
 
 	if (IsValidClient(client))
 	{
-		CreateTimer(2.0, Timer_AlertGang, client, TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(2.0, Timer_AlertGang, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
 
-public Action Timer_AlertGang(Handle hTimer, int client)
+public Action Timer_AlertGang(Handle hTimer, int userid)
 {
+	int client = GetClientOfUserId(userid);
+	
+	if (!IsValidClient(client))
+	{
+		return;
+	}
+	
 	char name[MAX_NAME_LENGTH];
 	GetClientName(client, name, sizeof(name));
 	PrintToGang(client, false, "%s %T", TAG, "GangAlert", LANG_SERVER, name);
@@ -1155,7 +1162,7 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 				
 				UpdateSQL(client);
 
-				CreateTimer(0.2, Timer_OpenGangMenu, client, TIMER_FLAG_NO_MAPCHANGE);
+				CreateTimer(0.2, Timer_OpenGangMenu, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 				
 				char name[MAX_NAME_LENGTH];
 				GetClientName(client, name, sizeof(name));
@@ -1213,9 +1220,13 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 	}
 }
 
-public Action Timer_OpenGangMenu(Handle hTimer, int client)
+public Action Timer_OpenGangMenu(Handle hTimer, int userid)
 {
-	StartOpeningGangMenu(client);
+	int client = GetClientOfUserId(userid);
+	if(IsValidClient(client))
+	{
+		StartOpeningGangMenu(client);
+	}
 }
 
 
