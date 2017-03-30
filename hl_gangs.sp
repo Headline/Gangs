@@ -2612,7 +2612,7 @@ void RemoveFromGang(int client)
 		char sQuery3[300];
 		Format(sQuery1, sizeof(sQuery1), "DELETE FROM hl_gangs_players WHERE gang = \"%s\"", ga_sGangName[client]);
 		Format(sQuery2, sizeof(sQuery2), "DELETE FROM hl_gangs_groups WHERE gang = \"%s\"", ga_sGangName[client]);
-		Format(sQuery3, sizeof(sQuery2), "DELETE FROM hl_gangs_statistics WHERE gang = \"%s\"", ga_sGangName[client]);
+		Format(sQuery3, sizeof(sQuery3), "DELETE FROM hl_gangs_statistics WHERE gang = \"%s\"", ga_sGangName[client]);
 
 		g_hDatabase.Query(SQLCallback_Void, sQuery1);
 		g_hDatabase.Query(SQLCallback_Void, sQuery2);
