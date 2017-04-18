@@ -30,7 +30,7 @@ before_script:
     - cp include/hl_gangs_credits.inc build/addons/sourcemod/scripting/include/
     - cd build/addons/sourcemod/scripting
     - chmod +x spcomp
-script: "./compile.sh hl_gangs.sp && ./compile.sh hl_gangs_credits.sp"
+script: "./compile.sh hl_gangs.sp && ./compile.sh hl_gangs_credits.sp && ./compile.sh hl_gangs_clantags.sp"
 before_deploy:
     - mkdir -p $TRAVIS_BUILD_DIR/translations/
     - cd $TRAVIS_BUILD_DIR/translations/
