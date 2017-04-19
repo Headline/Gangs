@@ -2433,14 +2433,20 @@ public void SQLCallback_CheckIfInDatabase_Player(Database db, DBResultSet result
 	{
 		ga_bIsPlayerInDatabase[client] = true;
 	}
+	
 	char sQuery[300];
+	char playerName[MAX_NAME_LENGTH], escapedName[MAXPLAYERS*2+1];
+	
+	GetClientName(client, playerName, sizeof(playerName));
+	g_hDatabase.Escape(playerName, escapedName, sizeof(escapedName));
+	
 	if (!ga_bIsPlayerInDatabase[client])
 	{
-		Format(sQuery, sizeof(sQuery), "INSERT INTO hl_gangs_players (gang, invitedby, rank, date, steamid, playername) VALUES(\"%s\", \"%s\", %i, %i, \"%s\", \"%N\")", ga_sGangName[client], ga_sInvitedBy[client], ga_iRank[client], ga_iDateJoined[client], ga_sSteamID[client], client);
+		Format(sQuery, sizeof(sQuery), "INSERT INTO hl_gangs_players (gang, invitedby, rank, date, steamid, playername) VALUES(\"%s\", \"%s\", %i, %i, \"%s\", \"%s\")", ga_sGangName[client], ga_sInvitedBy[client], ga_iRank[client], ga_iDateJoined[client], ga_sSteamID[client], escapedName);
 	}
 	else
 	{
-		Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_players SET gang=\"%s\",invitedby=\"%s\",playername=\"%N\",rank=%i,date=%i WHERE steamid=\"%s\"", ga_sGangName[client], ga_sInvitedBy[client], client, ga_iRank[client], ga_iDateJoined[client], ga_sSteamID[client]);
+		Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_players SET gang=\"%s\",invitedby=\"%s\",playername=\"%s\",rank=%i,date=%i WHERE steamid=\"%s\"", ga_sGangName[client], ga_sInvitedBy[client], escapedName, ga_iRank[client], ga_iDateJoined[client], ga_sSteamID[client]);
 	}
 	g_hDatabase.Query(SQLCallback_Void, sQuery);
 	
