@@ -45,6 +45,7 @@ before_deploy:
     - cp -R compiled/* $TRAVIS_BUILD_DIR/deploy/plugins
     - mkdir $TRAVIS_BUILD_DIR/deploy/plugins/disabled/
     - cp -R $TRAVIS_BUILD_DIR/deploy/plugins/hl_gangs_clantags.smx $TRAVIS_BUILD_DIR/deploy/plugins/disabled/
+    - rm --force $TRAVIS_BUILD_DIR/deploy/plugins/hl_gangs_clantags.smx
     - cp -R hl_gangs.sp $TRAVIS_BUILD_DIR/deploy/scripting
     - cp -R hl_gangs_credits.sp $TRAVIS_BUILD_DIR/deploy/scripting
     - cp -R hl_gangs_clantags.sp $TRAVIS_BUILD_DIR/deploy/scripting
