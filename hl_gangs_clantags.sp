@@ -11,7 +11,7 @@
 
 public Plugin myinfo =
 {
-	name = "[CS:GO/CS:S] Jailbreak Gangs Chat Tags",
+	name = "[CS:GO/CS:S] Jailbreak Gangs Clan Tags",
 	author = "Headline",
 	description = "Gangs clan tag extension",
 	version = PLUGIN_VERSION,
