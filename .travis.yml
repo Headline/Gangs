@@ -42,6 +42,7 @@ before_deploy:
     - mkdir -p $TRAVIS_BUILD_DIR/deploy
     - mkdir -p $TRAVIS_BUILD_DIR/deploy/plugins
     - mkdir -p $TRAVIS_BUILD_DIR/deploy/scripting/include
+    - cp -R $TRAVIS_BUILD_DIR/build/addons/sourcemod/scripting/include/* $TRAVIS_BUILD_DIR/deploy/scripting/include
     - cp -R compiled/* $TRAVIS_BUILD_DIR/deploy/plugins
     - mkdir $TRAVIS_BUILD_DIR/deploy/plugins/disabled/
     - cp -R $TRAVIS_BUILD_DIR/deploy/plugins/hl_gangs_clantags.smx $TRAVIS_BUILD_DIR/deploy/plugins/disabled/
