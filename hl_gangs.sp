@@ -1089,7 +1089,8 @@ public Action OnSay(int client, const char[] command, int args)
 	{
 		char sText[64], sFormattedText[2*sizeof(sText)+1]; 
 		GetCmdArgString(sText, sizeof(sText));
-		
+		StripQuotes(sText);
+
 		g_hDatabase.Escape(sText, sFormattedText, sizeof(sFormattedText));
 		TrimString(sFormattedText);
 
