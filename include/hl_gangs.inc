@@ -34,7 +34,7 @@ native void Gangs_MessageToAll(int client, const char[] format, any ...);
  * @param	client			client index
  * @return  int				gang size
  */
-native int Gangs_GetGangSize(int client)
+native int Gangs_GetGangSize(int client);
 
 /**
  * Returns if a client is a member of a gang
@@ -66,7 +66,7 @@ native void Gangs_GetGangName(int client, char[] buffer, int maxlength);
  * @param	client			client index
  * @return  float			damage modifier
  */
-native float Gangs_GetDamageModifier(client);
+native float Gangs_GetDamageModifier(int client);
 
 /**
  * Called after the main menu is built, but before it's displayed.

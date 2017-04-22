@@ -16,9 +16,10 @@ native int Gangs_GetCredits(int client)
  * Sets a client's credit ammount
  *
  * @param	client			client index
+ * @param	amount			credits to give
  * @return  no return
  */
-native void Gangs_SetCredits(int client, int ammount);
+native void Gangs_SetCredits(int client, int amount);
 
 
 public SharedPlugin __pl_hl_gangs_credits =
