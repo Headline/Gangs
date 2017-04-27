@@ -7,7 +7,7 @@
 #pragma newdecls required
 #pragma semicolon 1
 
-#define PLUGIN_VERSION "1.1"
+#define PLUGIN_VERSION "1.1.1"
 
 public Plugin myinfo =
 {
@@ -21,6 +21,8 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	HookEvent("player_spawn", Event_PlayerSpawn);
+	AddCommandListener(Command_JoinTeam, "jointeam");
+
 	
 	for (int i = 0; i < MaxClients; i++)
 	{
@@ -29,6 +31,16 @@ public void OnPluginStart()
 			SetClientClanTag(i);
 		}
 	}
+}
+
+public void OnClientPutInServer(int client)
+{
+	SetClientClanTag(i);
+}
+
+public Action Command_JoinTeam(int client, const char[] command, int argc )
+{
+	SetClientClanTag(client);	
 }
 
 public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
@@ -43,6 +55,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 
 	return Plugin_Continue;
 }
+
 
 void SetClientClanTag(int client)
 {
