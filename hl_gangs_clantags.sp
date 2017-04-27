@@ -7,7 +7,7 @@
 #pragma newdecls required
 #pragma semicolon 1
 
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION "1.1"
 
 public Plugin myinfo =
 {
@@ -21,6 +21,14 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	HookEvent("player_spawn", Event_PlayerSpawn);
+	
+	for (int i = 0; i < MaxClients; i++)
+	{
+		if (IsValidClient(i))
+		{
+			SetClientClanTag(i);
+		}
+	}
 }
 
 public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
@@ -31,14 +39,23 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 		return Plugin_Continue;
 	}
 
+	SetClientClanTag(client);
+
+	return Plugin_Continue;
+}
+
+void SetClientClanTag(int client)
+{
 	if (Gangs_HasGang(client))
 	{
 		char gangName[256];
 		Gangs_GetGangName(client, gangName, sizeof(gangName));
 		CS_SetClientClanTag(client, gangName);
 	}
-
-	return Plugin_Continue;
+	else
+	{
+		CS_SetClientClanTag(client, "");
+	}
 }
 
 bool IsValidClient(int client, bool bAllowBots = false, bool bAllowDead = true)
