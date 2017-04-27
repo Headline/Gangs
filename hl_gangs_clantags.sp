@@ -35,7 +35,7 @@ public void OnPluginStart()
 
 public void OnClientPutInServer(int client)
 {
-	SetClientClanTag(i);
+	SetClientClanTag(client);
 }
 
 public Action Command_JoinTeam(int client, const char[] command, int argc )
