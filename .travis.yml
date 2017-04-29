@@ -62,4 +62,4 @@ deploy:
     file: hl_gangs-git$TRAVIS_BUILD_NUMBER.zip
     on:
         repo: Headline22/Gangs
-        tags: true
+        branch: master
