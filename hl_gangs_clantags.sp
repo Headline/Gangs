@@ -59,6 +59,11 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 
 void SetClientClanTag(int client)
 {
+	if (!IsValidClient(client))
+	{
+		return;
+	}
+	
 	if (Gangs_HasGang(client))
 	{
 		char gangName[256];
