@@ -221,7 +221,7 @@ public Plugin myinfo =
 	name = "[CS:GO/CS:S] Jailbreak Gangs",
 	author = "Headline",
 	description = "An SQL-based gang plugin",
-	version = PLUGIN_VERSION,
+	version = GANGS_VERSION,
 	url = "http://michaelwflaherty.com"
 };
 

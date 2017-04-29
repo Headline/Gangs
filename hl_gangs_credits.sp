@@ -89,7 +89,7 @@ public int Native_SetCredits(Handle plugin, int numParams)
 	name = "[ANY] Blank Credits System",
 	author = "Headline",
 	description = "A generic unfeatured credit system",
-	version = PLUGIN_VERSION,
+	version = GANGS_VERSION,
 	url = "http://michaelwflaherty.com"
 };
 

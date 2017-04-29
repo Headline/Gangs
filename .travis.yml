@@ -53,7 +53,7 @@ before_deploy:
     - cp -R include/hl_gangs.inc $TRAVIS_BUILD_DIR/deploy/scripting/include
     - cp -R include/hl_gangs_credits.inc $TRAVIS_BUILD_DIR/deploy/scripting/include
     - cd $TRAVIS_BUILD_DIR/deploy
-    - zip -r hl_gangs.zip .
+    - zip -r hl_gangs-git$TRAVIS_COMMIT.zip .
 deploy:
     skip_cleanup: true
     provider: releases

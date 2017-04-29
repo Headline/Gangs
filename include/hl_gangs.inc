@@ -3,6 +3,9 @@
 #endif
 #define hl_gangs_include
  
+ 
+#define GANGS_VERSION "1.1.9.1"
+
 /* Gang Ranks */
 enum GangRank
 {
