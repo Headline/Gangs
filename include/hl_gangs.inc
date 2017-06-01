@@ -109,6 +109,16 @@ forward void Gangs_OnPerkMenuCreated(int client, Menu menu);
  */
 forward void Gangs_OnPerkMenuCallback(Menu menu, MenuAction action, int param1, int param2);
 
+
+/**
+ * Called immediately before perks are given. Set shouldGive to false in order to skip giving perks.
+ 
+ * @param int client index
+ * @param &bool shouldGive
+ * @noreturn
+ */
+forward void Gangs_OnPerksSetPre(int client, bool &shouldGive = true);
+
 public SharedPlugin __pl_hl_gangs  =
 {
 	name = "hl_gangs",

@@ -58,6 +58,7 @@ Handle g_hOnMainMenu;
 Handle g_hOnMainMenuCallback;
 Handle g_hOnPerkMenu;
 Handle g_hOnPerkMenuCallback;
+Handle g_hOnGangPerksSetPre;
 
 /* Gang Globals */
 GangRank ga_iRank[MAXPLAYERS + 1] = {Rank_Invalid, ...};
@@ -83,7 +84,7 @@ bool ga_bIsPlayerInDatabase[MAXPLAYERS + 1] = {false, ...};
 bool ga_bIsGangInDatabase[MAXPLAYERS + 1] = {false, ...};
 bool ga_bHasGang[MAXPLAYERS + 1] = {false, ...};
 bool ga_bRename[MAXPLAYERS + 1] = {false, ...};
-bool g_bLR = false;
+bool g_bDisablePerks = false;
 
 /* Supported Store Modules */
 bool g_bZepyhrus = false;
@@ -279,6 +280,7 @@ public void OnPluginStart()
 	g_hOnMainMenu = CreateGlobalForward("Gangs_OnMenuCreated", ET_Ignore, Param_Cell, Param_Cell);
 	g_hOnPerkMenuCallback = CreateGlobalForward("Gangs_OnPerkMenuCallback", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
 	g_hOnPerkMenu = CreateGlobalForward("Gangs_OnPerkMenuCreated", ET_Ignore, Param_Cell, Param_Cell);
+	g_hOnGangPerksSetPre = CreateGlobalForward("Gangs_OnPerksSetPre", ET_Ignore, Param_Cell, Param_CellByRef);
 
 	/* Events */
 	HookEvent("player_spawn", Event_PlayerSpawn);
@@ -382,21 +384,35 @@ public void OnConfigsExecuted()
 
 public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
-	g_bLR = false;
+	g_bDisablePerks = false;
 }
 
 public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
-	g_bLR = false;
+	g_bDisablePerks = false;
+	
 }
 
 public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(event.GetInt("userid"));
+
+	
 	if (IsValidClient(client) && GetClientTeam(client) == 2)
 	{
 		if (ga_bHasGang[client])
 		{
+			bool shouldSetPerks = true;
+			Call_StartForward(g_hOnGangPerksSetPre);
+			Call_PushCell(client);
+			Call_PushCellRef(shouldSetPerks);
+			Call_Finish();
+			
+			if (!shouldSetPerks)
+			{
+				return Plugin_Continue;
+			}
+			
 			if (ga_iHealth[client] != 0 && !gcv_bDisableHealth.BoolValue)
 			{
 				int iHealth = ga_iHealth[client] * 1 + 100;
@@ -414,6 +430,8 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 			}
 		}
 	}
+	
+	return Plugin_Continue;
 }
 
 public Action Timer_CheckSetGravity(Handle hHandle, int iUserid)
@@ -492,7 +510,7 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 		return Plugin_Continue;
 	}
 	
-	if (!g_bLR && IsValidClient(attacker) && IsValidClient(victim) && ga_bHasGang[attacker] && attacker != victim && GetClientTeam(victim) == 3 && GetClientTeam(attacker) == 2)
+	if (!g_bDisablePerks && IsValidClient(attacker) && IsValidClient(victim) && ga_bHasGang[attacker] && attacker != victim && GetClientTeam(victim) == 3 && GetClientTeam(attacker) == 2)
 	{
 		char sWeapon[32];
 		GetClientWeapon(attacker, sWeapon, sizeof(sWeapon)); 
@@ -2768,12 +2786,12 @@ void ResetVariables(int client)
 
 void LastRequest()
 {
-	if (g_bLR)
+	if (g_bDisablePerks)
 	{
 		return;
 	}
 	
-	g_bLR = true;
+	g_bDisablePerks = true;
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsValidClient(i))
