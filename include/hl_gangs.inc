@@ -117,7 +117,7 @@ forward void Gangs_OnPerkMenuCallback(Menu menu, MenuAction action, int param1, 
  * @param &bool shouldGive
  * @noreturn
  */
-forward void Gangs_OnPerksSetPre(int client, bool &shouldGive = true);
+forward void Gangs_OnPerksSetPre(int client, bool &shouldGive);
 
 public SharedPlugin __pl_hl_gangs  =
 {
