@@ -52,6 +52,7 @@ ConVar gcv_bDisableHealth;
 ConVar gcv_bDisableDamage;
 ConVar gcv_bDisableSize;
 ConVar gcv_fDamageModifier;
+ConVar gcv_iGangSizeMaxUpgrades;
 
 /* Forwards */
 Handle g_hOnMainMenu;
@@ -262,6 +263,8 @@ public void OnPluginStart()
 	
 	gcv_fDamageModifier = AutoExecConfig_CreateConVar("hl_gangs_damage_modifier", "1.5", "Knife Damage perk modifier. 1.5 default");	
 
+	gcv_iGangSizeMaxUpgrades = AutoExecConfig_CreateConVar("hl_gangs_size_max_upgrades", "9", "The maximum amount of size upgrades that may occur");
+	
 	/* Perk Disabling */
 	gcv_bDisableDamage = AutoExecConfig_CreateConVar("hl_gangs_damage", "0", "Disable the damage perk?\n Set 1 to disable");
 	gcv_bDisableHealth = AutoExecConfig_CreateConVar("hl_gangs_health", "0", "Disable the health perk?\n Set 1 to disable");
@@ -1658,7 +1661,7 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 		{
 			price = gcv_iSizePrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iSize[client]);
 			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/9] [%i %T]", "GangSize", client, ga_iSize[client], price, "Credits", client);
-			menu.AddItem("size", sDisplayBuffer, (ga_iSize[client] >= 9 || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+			menu.AddItem("size", sDisplayBuffer, (ga_iSize[client] >= gcv_iGangSizeMaxUpgrades.IntValue || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 		}
 		 
 		 
