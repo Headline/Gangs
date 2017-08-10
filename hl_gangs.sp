@@ -1660,7 +1660,7 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 		if (!gcv_bDisableSize.BoolValue && gcv_iMaxGangSize.IntValue != 0)
 		{
 			price = gcv_iSizePrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iSize[client]);
-			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/9] [%i %T]", "GangSize", client, ga_iSize[client], price, "Credits", client);
+			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/%i] [%i %T]", "GangSize", client, ga_iSize[client], gcv_iGangSizeMaxUpgrades.IntValue, price, "Credits", client);
 			menu.AddItem("size", sDisplayBuffer, (ga_iSize[client] >= gcv_iGangSizeMaxUpgrades.IntValue || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 		}
 		 
