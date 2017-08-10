@@ -53,6 +53,7 @@ ConVar gcv_bDisableDamage;
 ConVar gcv_bDisableSize;
 ConVar gcv_fDamageModifier;
 ConVar gcv_fGravityModifier;
+ConVar gcv_fSpeedModifier;
 ConVar gcv_iGangSizeMaxUpgrades;
 
 /* Forwards */
@@ -264,7 +265,9 @@ public void OnPluginStart()
 	
 	gcv_fDamageModifier = AutoExecConfig_CreateConVar("hl_gangs_damage_modifier", "1.5", "Knife Damage perk modifier. 1.5 default");	
 
-	gcv_fGravityModifier = AutoExecConfig_CreateConVar("hl_gangs_gravity_modifier", "0.3", "Knife Damage perk modifier. 1.5 default");
+	gcv_fGravityModifier = AutoExecConfig_CreateConVar("hl_gangs_gravity_modifier", "0.03", "Gravity perk modifier. 0.03 default");
+	
+	gcv_fSpeedModifier = AutoExecConfig_CreateConVar("hl_gangs_speed_modifier", "0.03", "Speed perk modifier. 0.03 default");
 
 	gcv_iGangSizeMaxUpgrades = AutoExecConfig_CreateConVar("hl_gangs_size_max_upgrades", "9", "The maximum amount of size upgrades that may occur");
 	
@@ -2685,7 +2688,7 @@ float GetClientGravityAmmount(int client)
 
 float GetClientSpeedAmmount(int client)
 {
-	return (ga_iSpeed[client]/100.0) + 1.0;
+	return (ga_iSpeed[client]*gcv_fSpeedModifier.FloatValue) + 1.0;
 }
 
 void PrintToGang(int client, bool bPrintToClient = false, const char[] sMsg, any ...)
