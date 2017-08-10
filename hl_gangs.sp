@@ -2678,7 +2678,7 @@ void RemoveFromGang(int client)
 float GetClientGravityAmmount(int client)
 {
 	float fGravityAmmount;
-	fGravityAmmount = (1 - gcv_fGravityModifier*ga_iGravity);
+	fGravityAmmount = (1 - (gcv_fGravityModifier.FloatValue*ga_iGravity[client]));
 	return fGravityAmmount;
 }
 
