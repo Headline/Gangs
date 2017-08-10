@@ -52,6 +52,7 @@ ConVar gcv_bDisableHealth;
 ConVar gcv_bDisableDamage;
 ConVar gcv_bDisableSize;
 ConVar gcv_fDamageModifier;
+ConVar gcv_fGravityModifier;
 ConVar gcv_iGangSizeMaxUpgrades;
 
 /* Forwards */
@@ -262,6 +263,8 @@ public void OnPluginStart()
 	gcv_iPriceModifier = AutoExecConfig_CreateConVar("hl_gangs_price_modifier", "0", "Price modifier for perks\n Set 0 to disable");
 	
 	gcv_fDamageModifier = AutoExecConfig_CreateConVar("hl_gangs_damage_modifier", "1.5", "Knife Damage perk modifier. 1.5 default");	
+
+	gcv_fGravityModifier = AutoExecConfig_CreateConVar("hl_gangs_gravity_modifier", "0.3", "Knife Damage perk modifier. 1.5 default");
 
 	gcv_iGangSizeMaxUpgrades = AutoExecConfig_CreateConVar("hl_gangs_size_max_upgrades", "9", "The maximum amount of size upgrades that may occur");
 	
@@ -2675,49 +2678,7 @@ void RemoveFromGang(int client)
 float GetClientGravityAmmount(int client)
 {
 	float fGravityAmmount;
-	switch (ga_iGravity[client])
-	{
-		case 1:
-		{
-			fGravityAmmount = 0.98;
-		}
-		case 2:
-		{
-			fGravityAmmount = 0.96;
-		}
-		case 3:
-		{
-			fGravityAmmount = 0.94;
-		}
-		case 4:
-		{
-			fGravityAmmount = 0.92;
-		}
-		case 5:
-		{
-			fGravityAmmount = 0.90;
-		}
-		case 6:
-		{
-			fGravityAmmount = 0.89;
-		}
-		case 7:
-		{
-			fGravityAmmount = 0.88;
-		}
-		case 8:
-		{
-			fGravityAmmount = 0.87;
-		}
-		case 9:
-		{
-			fGravityAmmount = 0.86;
-		}
-		case 10:
-		{
-			fGravityAmmount = 0.85;
-		}
-	}
+	fGravityAmmount = (1 - gcv_fGravityModifier*ga_iGravity);
 	return fGravityAmmount;
 }
 
