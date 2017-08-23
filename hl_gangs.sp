@@ -613,7 +613,7 @@ public void SQLCallback_Connect(Database db, const char[] error, any data)
 {
 	if (db == null)
 	{
-		SetDB();
+		SetFailState(error);
 	}
 	else
 	{
