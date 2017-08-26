@@ -140,7 +140,7 @@ public int Native_MessageToAll(Handle plugin, int numParams)
 	
 	FormatNativeString(0, 1, 2, sizeof(phrase), bytes, phrase);
 
-	CPrintToChatAll("%s %s", TAG, phrase);
+	PrintToChatAll("%s %s", TAG, phrase);
 }
 
 public int Native_Message(Handle plugin, int numParams)
@@ -1195,7 +1195,7 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 				
 				char name[MAX_NAME_LENGTH];
 				GetClientName(client, name, sizeof(name));
-				CPrintToChatAll("%s %T", TAG, "GangCreated", LANG_SERVER, name, ga_sGangName[client]);
+				PrintToChatAll("%s %T", TAG, "GangCreated", LANG_SERVER, name, ga_sGangName[client]);
 
 			}
 			else
@@ -1234,7 +1234,7 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 
 				char name[MAX_NAME_LENGTH];
 				GetClientName(client, name, sizeof(name));
-				CPrintToChatAll("%s %T", TAG, "GangNameChange", LANG_SERVER, name, sOldName, sText);
+				PrintToChatAll("%s %T", TAG, "GangNameChange", LANG_SERVER, name, sOldName, sText);
 
 				StartOpeningGangMenu(client);
 
@@ -1566,7 +1566,7 @@ public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int
 				char name[MAX_NAME_LENGTH];
 				GetClientName(param1, name, sizeof(name));
 				
-				CPrintToChatAll("%s %T", TAG, "GangJoined", LANG_SERVER, name, ga_sGangName[param1]);
+				PrintToChatAll("%s %T", TAG, "GangJoined", LANG_SERVER, name, ga_sGangName[param1]);
 			}
 			else if (StrEqual(sInfo, "no"))		
 			{
@@ -1667,7 +1667,7 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 		if (!gcv_bDisableSize.BoolValue && gcv_iMaxGangSize.IntValue != 0)
 		{
 			price = gcv_iSizePrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iSize[client]);
-			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/gcv_iGangSizeMaxUpgrades] [%i %T]", "GangSize", client, ga_iSize[client], price, "Credits", client);
+			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/%i] [%i %T]", "GangSize", client, ga_iSize[client], gcv_iGangSizeMaxUpgrades.IntValue, price, "Credits", client);
 			menu.AddItem("size", sDisplayBuffer, (ga_iSize[client] >= gcv_iGangSizeMaxUpgrades.IntValue || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 		}
 		 
@@ -2215,7 +2215,7 @@ public int AdministrationKickMenu_CallBack(Menu menu, MenuAction action, int par
 			Format(sQuery1, sizeof(sQuery1), "DELETE FROM hl_gangs_players WHERE steamid = \"%s\"", sTempArray[0]);
 			g_hDatabase.Query(SQLCallback_Void, sQuery1);
 			
-			CPrintToChatAll("%s %T", TAG, "GangMemberKick", LANG_SERVER, sTempArray[1], ga_sGangName[param1]);
+			PrintToChatAll("%s %T", TAG, "GangMemberKick", LANG_SERVER, sTempArray[1], ga_sGangName[param1]);
 			
 			char sSteamID[64];
 			for (int i = 1; i <= MaxClients; i++)
@@ -2618,15 +2618,15 @@ void SetClientCredits(int client, int iAmmount)
 {
 	if (g_bZepyhrus)
 	{
-		return Store_GetClientCredits(client);
+		Store_SetClientCredits(client, iAmmount);
 	}
 	else if (g_bShanapu)
 	{
-		return MyJailShop_GetCredits(client);
+		MyJailShop_SetCredits(client, iAmmount);
 	}
 	else if (g_bFrozdark)
 	{
-		return Shop_GetClientCredits(client);
+		Shop_SetClientCredits(client, iAmmount);
 	}
 	else if (g_bDefault)
 	{
@@ -2655,7 +2655,7 @@ void RemoveFromGang(int client)
 		
 		char name[MAX_NAME_LENGTH];
 		GetClientName(client, name, sizeof(name));
-		CPrintToChatAll("%s %T", TAG, "GangDisbanded", LANG_SERVER, name, ga_sGangName[client]);
+		PrintToChatAll("%s %T", TAG, "GangDisbanded", LANG_SERVER, name, ga_sGangName[client]);
 		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (IsValidClient(i) && StrEqual(ga_sGangName[i], ga_sGangName[client]) && i != client)
@@ -2673,7 +2673,7 @@ void RemoveFromGang(int client)
 		
 		char name[MAX_NAME_LENGTH];
 		GetClientName(client, name, sizeof(name));
-		CPrintToChatAll("%s %T", TAG, "LeftGang", LANG_SERVER, name, ga_sGangName[client]);
+		PrintToChatAll("%s %T", TAG, "LeftGang", LANG_SERVER, name, ga_sGangName[client]);
 		ResetVariables(client);
 	}
 }
