@@ -19,15 +19,17 @@
 #include <sdkhooks>
 #include <autoexecconfig>
 #include <hl_gangs>
-#include <colors>
 #include <hosties>
 #include <lastrequest>
 
 #undef REQUIRE_PLUGIN
+#include <store>
 #include <hl_gangs_credits>
+#include <myjailshop>
+#include <shop>
 
 #define PLUGIN_VERSION "1.1.9"
-#define TAG "[{green}FunTime{default}] "
+#define TAG " \x03[Gangs]\x04"
 
 /* Compiler Instructions */
 #pragma semicolon 1
@@ -155,7 +157,7 @@ public int Native_Message(Handle plugin, int numParams)
 	
 	FormatNativeString(0, 2, 3, sizeof(phrase), bytes, phrase);
 
-	CPrintToChat(client, "%s %s", TAG, phrase);
+	PrintToChat(client, "%s %s", TAG, phrase);
 	return 0;
 }
 
@@ -1070,7 +1072,7 @@ void StartGangCreation(int client)
 	}
 	for (int i = 0; i <= 5; i++)
 	{
-		CPrintToChat(client, "%s %t", TAG, "GangName");
+		PrintToChat(client, "%s %t", TAG, "GangName");
 	}
 	ga_bSetName[client] = true;
 }
@@ -1092,7 +1094,7 @@ public Action OnSay(int client, const char[] command, int args)
 		
 		if (strlen(sText) > 16)
 		{
-			CPrintToChat(client, "%s %t", TAG, "NameTooLong");
+			PrintToChat(client, "%s %t", TAG, "NameTooLong");
 			return Plugin_Handled;
 		}
 		else if (strlen(sText) == 0)
@@ -1122,7 +1124,7 @@ public Action OnSay(int client, const char[] command, int args)
 
 		if (strlen(sText) > 16)
 		{
-			CPrintToChat(client, "%s %t", TAG, "NameTooLong");
+			PrintToChat(client, "%s %t", TAG, "NameTooLong");
 			return Plugin_Handled;
 		}
 		else if (strlen(sText) == 0)
@@ -1198,7 +1200,7 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 			}
 			else
 			{
-				CPrintToChat(client, "%s %t", TAG, "NameAlreadyUsed");
+				PrintToChat(client, "%s %t", TAG, "NameAlreadyUsed");
 			}
 			
 			ga_bSetName[client] = false;
@@ -1239,7 +1241,7 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 			}
 			else
 			{
-				CPrintToChat(client, "%s %t", TAG, "NameAlreadyUsed");
+				PrintToChat(client, "%s %t", TAG, "NameAlreadyUsed");
 			}
 			
 			ga_bRename[client] = false;
@@ -1460,13 +1462,13 @@ public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int
 			if (ga_iGangSize[param1] >= gcv_iMaxGangSize.IntValue + ga_iSize[param1]
 				&& !gcv_bDisableSize.BoolValue)
 			{
-				CPrintToChat(param1, "%s %t", TAG, "GangIsFull");
+				PrintToChat(param1, "%s %t", TAG, "GangIsFull");
 				return;
 			}
 
 			if (!gcv_bInviteStyle.BoolValue)
 			{
-				CPrintToChat(GetClientOfUserId(iUserID), "%s %t", TAG, "AcceptInstructions", ga_sGangName[param1]);
+				PrintToChat(GetClientOfUserId(iUserID), "%s %t", TAG, "AcceptInstructions", ga_sGangName[param1]);
 			}
 			else
 			{
@@ -1538,7 +1540,7 @@ public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int
 				
 				if (ga_iGangSize[param1] >= gcv_iMaxGangSize.IntValue + ga_iSize[param1] && !gcv_bDisableSize.BoolValue)
 				{
-					CPrintToChat(param1, "%s %t", TAG, "GangIsFull");
+					PrintToChat(param1, "%s %t", TAG, "GangIsFull");
 					return;
 				}
 				ga_sGangName[param1] = ga_sGangName[sender];
@@ -1886,7 +1888,7 @@ public int AdministrationMenu_Callback(Menu menu, MenuAction action, int param1,
 				SetClientCredits(param1, GetClientCredits(param1) - 100);
 				for (int i = 1; i <= 5; i++)
 				{
-					CPrintToChat(param1, "%s %t", TAG, "GangName");
+					PrintToChat(param1, "%s %t", TAG, "GangName");
 				}
 				ga_bRename[param1] = true;
 			}
@@ -2281,7 +2283,7 @@ public void SQL_Callback_TopMenu(Database db, DBResultSet results, const char[] 
 		menu.SetTitle(menuTitle);
 		if (results.RowCount == 0)
 		{
-			CPrintToChat(client, "%s %t", TAG, "NoGangs");
+			PrintToChat(client, "%s %t", TAG, "NoGangs");
 			
 			delete menu;
 			return;
@@ -2589,7 +2591,19 @@ void DeleteDuplicates()
 
 int GetClientCredits(int client)
 {
-	if (g_bDefault)
+	if (g_bZepyhrus)
+	{
+		return Store_GetClientCredits(client);
+	}
+	else if (g_bShanapu)
+	{
+		return MyJailShop_GetCredits(client);
+	}
+	else if (g_bFrozdark)
+	{
+		return Shop_GetClientCredits(client);
+	}
+	else if (g_bDefault)
 	{
 		return Gangs_GetCredits(client);
 	}
@@ -2602,7 +2616,19 @@ int GetClientCredits(int client)
 
 void SetClientCredits(int client, int iAmmount)
 {
-	if (g_bDefault)
+	if (g_bZepyhrus)
+	{
+		return Store_GetClientCredits(client);
+	}
+	else if (g_bShanapu)
+	{
+		return MyJailShop_GetCredits(client);
+	}
+	else if (g_bFrozdark)
+	{
+		return Shop_GetClientCredits(client);
+	}
+	else if (g_bDefault)
 	{
 		Gangs_SetCredits(client, iAmmount);
 	}
@@ -2681,7 +2707,7 @@ void PrintToGang(int client, bool bPrintToClient = false, const char[] sMsg, any
 		{
 			if (bPrintToClient)
 			{
-				CPrintToChat(i, sFormattedMsg);
+				PrintToChat(i, sFormattedMsg);
 			}
 			else
 			{
@@ -2691,7 +2717,7 @@ void PrintToGang(int client, bool bPrintToClient = false, const char[] sMsg, any
 				}
 				else
 				{
-					CPrintToChat(i, sFormattedMsg);
+					PrintToChat(i, sFormattedMsg);
 				}
 			}
 		}
@@ -2742,7 +2768,7 @@ public void OnAvailableLR(int announce)
 			{
 				if (ga_bHasGang[i])
 				{
-					CPrintToChat(i, "%s %t", TAG, "GamePerksDisabled");
+					PrintToChat(i, "%s %t", TAG, "GamePerksDisabled");
 					if (GetClientHealth(i) > 100)
 					{
 						SetEntProp(i, Prop_Send, "m_iHealth", 100);
