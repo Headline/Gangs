@@ -19,15 +19,15 @@
 #include <sdkhooks>
 #include <autoexecconfig>
 #include <hl_gangs>
+#include <colors>
+#include <hosties>
+#include <lastrequest>
 
 #undef REQUIRE_PLUGIN
-#include <store>
 #include <hl_gangs_credits>
-#include <myjailshop>
-#include <shop>
 
 #define PLUGIN_VERSION "1.1.9"
-#define TAG " \x03[Gangs]\x04"
+#define TAG "[{green}FunTime{default}] "
 
 /* Compiler Instructions */
 #pragma semicolon 1
@@ -54,6 +54,7 @@ ConVar gcv_bDisableSize;
 ConVar gcv_fDamageModifier;
 ConVar gcv_fGravityModifier;
 ConVar gcv_fSpeedModifier;
+ConVar gcv_fHealthModifier;
 ConVar gcv_iGangSizeMaxUpgrades;
 
 /* Forwards */
@@ -137,7 +138,7 @@ public int Native_MessageToAll(Handle plugin, int numParams)
 	
 	FormatNativeString(0, 1, 2, sizeof(phrase), bytes, phrase);
 
-	PrintToChatAll("%s %s", TAG, phrase);
+	CPrintToChatAll("%s %s", TAG, phrase);
 }
 
 public int Native_Message(Handle plugin, int numParams)
@@ -154,7 +155,7 @@ public int Native_Message(Handle plugin, int numParams)
 	
 	FormatNativeString(0, 2, 3, sizeof(phrase), bytes, phrase);
 
-	PrintToChat(client, "%s %s", TAG, phrase);
+	CPrintToChat(client, "%s %s", TAG, phrase);
 	return 0;
 }
 
@@ -247,30 +248,33 @@ public void OnPluginStart()
 
 	gcv_iMaxGangSize = AutoExecConfig_CreateConVar("hl_gangs_max_size", "6", "Initial size for a gang");
 
+	gcv_iSizePrice = AutoExecConfig_CreateConVar("hl_gangs_size_price", "20", "Price of the Size perk");
+
+	gcv_iGangSizeMaxUpgrades = AutoExecConfig_CreateConVar("hl_gangs_size_max_upgrades", "9", "The maximum amount of size upgrades that may occur");
+
 	gcv_iHealthPrice = AutoExecConfig_CreateConVar("hl_gangs_health_price", "20", "Price of the Health perk");
+
+	gcv_fHealthModifier = AutoExecConfig_CreateConVar("hl_gangs_health_modifier", "1.0", "Knife Damage perk modifier. 1.0 default");	
 
 	gcv_iDamagePrice = AutoExecConfig_CreateConVar("hl_gangs_damage_price", "20", "Price of the Damage perk");
 
+	gcv_fDamageModifier = AutoExecConfig_CreateConVar("hl_gangs_damage_modifier", "1.5", "Knife Damage perk modifier. 1.5 default");	
+
 	gcv_iGravityPrice = AutoExecConfig_CreateConVar("hl_gangs_gravity_price", "20", "Price of the Gravity perk");
 
+	gcv_fGravityModifier = AutoExecConfig_CreateConVar("hl_gangs_gravity_modifier", "0.02", "Gravity perk modifier. 0.02 default");
+
 	gcv_iSpeedPrice = AutoExecConfig_CreateConVar("hl_gangs_speed_price", "20", "Price of the Speed perk");
-	
-	gcv_iSizePrice = AutoExecConfig_CreateConVar("hl_gangs_size_price", "20", "Price of the Size perk");
+
+	gcv_fSpeedModifier = AutoExecConfig_CreateConVar("hl_gangs_speed_modifier", "0.02", "Speed perk modifier. 0.02 default");
+
 
 	gcv_iCreateGangPrice = AutoExecConfig_CreateConVar("hl_gangs_creation_price", "20", "Price of gang creation");
 
 	gcv_iRenamePrice = AutoExecConfig_CreateConVar("hl_gangs_rename_price", "40", "Price to rename");	
-	
+
 	gcv_iPriceModifier = AutoExecConfig_CreateConVar("hl_gangs_price_modifier", "0", "Price modifier for perks\n Set 0 to disable");
-	
-	gcv_fDamageModifier = AutoExecConfig_CreateConVar("hl_gangs_damage_modifier", "1.5", "Knife Damage perk modifier. 1.5 default");	
 
-	gcv_fGravityModifier = AutoExecConfig_CreateConVar("hl_gangs_gravity_modifier", "0.03", "Gravity perk modifier. 0.03 default");
-	
-	gcv_fSpeedModifier = AutoExecConfig_CreateConVar("hl_gangs_speed_modifier", "0.03", "Speed perk modifier. 0.03 default");
-
-	gcv_iGangSizeMaxUpgrades = AutoExecConfig_CreateConVar("hl_gangs_size_max_upgrades", "9", "The maximum amount of size upgrades that may occur");
-	
 	/* Perk Disabling */
 	gcv_bDisableDamage = AutoExecConfig_CreateConVar("hl_gangs_damage", "0", "Disable the damage perk?\n Set 1 to disable");
 	gcv_bDisableHealth = AutoExecConfig_CreateConVar("hl_gangs_health", "0", "Disable the health perk?\n Set 1 to disable");
@@ -424,7 +428,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 			
 			if (ga_iHealth[client] != 0 && !gcv_bDisableHealth.BoolValue)
 			{
-				int iHealth = ga_iHealth[client] * 1 + 100;
+				int iHealth = ga_iHealth[client] * gcv_fHealthModifier.IntValue + 100;
 				SetEntProp(client, Prop_Send, "m_iHealth", iHealth);
 			}
 			if (ga_iGravity[client] != 0 && !gcv_bDisableGravity.BoolValue)
@@ -584,11 +588,6 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
-
-	if (GetPlayerAliveCount(2) == 1 && GetPlayerAliveCount(3) > 0)
-	{
-		LastRequest();
-	}
 	
 	if (IsValidClient(attacker) && IsValidClient(client) && client != attacker && ga_bHasGang[attacker])
 	{
@@ -1071,7 +1070,7 @@ void StartGangCreation(int client)
 	}
 	for (int i = 0; i <= 5; i++)
 	{
-		PrintToChat(client, "%s %t", TAG, "GangName");
+		CPrintToChat(client, "%s %t", TAG, "GangName");
 	}
 	ga_bSetName[client] = true;
 }
@@ -1093,7 +1092,7 @@ public Action OnSay(int client, const char[] command, int args)
 		
 		if (strlen(sText) > 16)
 		{
-			PrintToChat(client, "%s %t", TAG, "NameTooLong");
+			CPrintToChat(client, "%s %t", TAG, "NameTooLong");
 			return Plugin_Handled;
 		}
 		else if (strlen(sText) == 0)
@@ -1123,7 +1122,7 @@ public Action OnSay(int client, const char[] command, int args)
 
 		if (strlen(sText) > 16)
 		{
-			PrintToChat(client, "%s %t", TAG, "NameTooLong");
+			CPrintToChat(client, "%s %t", TAG, "NameTooLong");
 			return Plugin_Handled;
 		}
 		else if (strlen(sText) == 0)
@@ -1194,12 +1193,12 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 				
 				char name[MAX_NAME_LENGTH];
 				GetClientName(client, name, sizeof(name));
-				PrintToChatAll("%s %T", TAG, "GangCreated", LANG_SERVER, name, ga_sGangName[client]);
+				CPrintToChatAll("%s %T", TAG, "GangCreated", LANG_SERVER, name, ga_sGangName[client]);
 
 			}
 			else
 			{
-				PrintToChat(client, "%s %t", TAG, "NameAlreadyUsed");
+				CPrintToChat(client, "%s %t", TAG, "NameAlreadyUsed");
 			}
 			
 			ga_bSetName[client] = false;
@@ -1233,14 +1232,14 @@ public void SQL_Callback_CheckName(Database db, DBResultSet results, const char[
 
 				char name[MAX_NAME_LENGTH];
 				GetClientName(client, name, sizeof(name));
-				PrintToChatAll("%s %T", TAG, "GangNameChange", LANG_SERVER, name, sOldName, sText);
+				CPrintToChatAll("%s %T", TAG, "GangNameChange", LANG_SERVER, name, sOldName, sText);
 
 				StartOpeningGangMenu(client);
 
 			}
 			else
 			{
-				PrintToChat(client, "%s %t", TAG, "NameAlreadyUsed");
+				CPrintToChat(client, "%s %t", TAG, "NameAlreadyUsed");
 			}
 			
 			ga_bRename[client] = false;
@@ -1461,13 +1460,13 @@ public int InvitationMenu_Callback(Menu menu, MenuAction action, int param1, int
 			if (ga_iGangSize[param1] >= gcv_iMaxGangSize.IntValue + ga_iSize[param1]
 				&& !gcv_bDisableSize.BoolValue)
 			{
-				PrintToChat(param1, "%s %t", TAG, "GangIsFull");
+				CPrintToChat(param1, "%s %t", TAG, "GangIsFull");
 				return;
 			}
 
 			if (!gcv_bInviteStyle.BoolValue)
 			{
-				PrintToChat(GetClientOfUserId(iUserID), "%s %t", TAG, "AcceptInstructions", ga_sGangName[param1]);
+				CPrintToChat(GetClientOfUserId(iUserID), "%s %t", TAG, "AcceptInstructions", ga_sGangName[param1]);
 			}
 			else
 			{
@@ -1539,7 +1538,7 @@ public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int
 				
 				if (ga_iGangSize[param1] >= gcv_iMaxGangSize.IntValue + ga_iSize[param1] && !gcv_bDisableSize.BoolValue)
 				{
-					PrintToChat(param1, "%s %t", TAG, "GangIsFull");
+					CPrintToChat(param1, "%s %t", TAG, "GangIsFull");
 					return;
 				}
 				ga_sGangName[param1] = ga_sGangName[sender];
@@ -1565,7 +1564,7 @@ public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int
 				char name[MAX_NAME_LENGTH];
 				GetClientName(param1, name, sizeof(name));
 				
-				PrintToChatAll("%s %T", TAG, "GangJoined", LANG_SERVER, name, ga_sGangName[param1]);
+				CPrintToChatAll("%s %T", TAG, "GangJoined", LANG_SERVER, name, ga_sGangName[param1]);
 			}
 			else if (StrEqual(sInfo, "no"))		
 			{
@@ -1666,7 +1665,7 @@ public void SQLCallback_Perks(Database db, DBResultSet results, const char[] err
 		if (!gcv_bDisableSize.BoolValue && gcv_iMaxGangSize.IntValue != 0)
 		{
 			price = gcv_iSizePrice.IntValue + (gcv_iPriceModifier.IntValue * ga_iSize[client]);
-			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/%i] [%i %T]", "GangSize", client, ga_iSize[client], gcv_iGangSizeMaxUpgrades.IntValue, price, "Credits", client);
+			Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T [%i/gcv_iGangSizeMaxUpgrades] [%i %T]", "GangSize", client, ga_iSize[client], price, "Credits", client);
 			menu.AddItem("size", sDisplayBuffer, (ga_iSize[client] >= gcv_iGangSizeMaxUpgrades.IntValue || GetClientCredits(client) < price)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 		}
 		 
@@ -1887,7 +1886,7 @@ public int AdministrationMenu_Callback(Menu menu, MenuAction action, int param1,
 				SetClientCredits(param1, GetClientCredits(param1) - 100);
 				for (int i = 1; i <= 5; i++)
 				{
-					PrintToChat(param1, "%s %t", TAG, "GangName");
+					CPrintToChat(param1, "%s %t", TAG, "GangName");
 				}
 				ga_bRename[param1] = true;
 			}
@@ -2214,7 +2213,7 @@ public int AdministrationKickMenu_CallBack(Menu menu, MenuAction action, int par
 			Format(sQuery1, sizeof(sQuery1), "DELETE FROM hl_gangs_players WHERE steamid = \"%s\"", sTempArray[0]);
 			g_hDatabase.Query(SQLCallback_Void, sQuery1);
 			
-			PrintToChatAll("%s %T", TAG, "GangMemberKick", LANG_SERVER, sTempArray[1], ga_sGangName[param1]);
+			CPrintToChatAll("%s %T", TAG, "GangMemberKick", LANG_SERVER, sTempArray[1], ga_sGangName[param1]);
 			
 			char sSteamID[64];
 			for (int i = 1; i <= MaxClients; i++)
@@ -2282,7 +2281,7 @@ public void SQL_Callback_TopMenu(Database db, DBResultSet results, const char[] 
 		menu.SetTitle(menuTitle);
 		if (results.RowCount == 0)
 		{
-			PrintToChat(client, "%s %t", TAG, "NoGangs");
+			CPrintToChat(client, "%s %t", TAG, "NoGangs");
 			
 			delete menu;
 			return;
@@ -2590,19 +2589,7 @@ void DeleteDuplicates()
 
 int GetClientCredits(int client)
 {
-	if (g_bZepyhrus)
-	{
-		return Store_GetClientCredits(client);
-	}
-	else if (g_bShanapu)
-	{
-		return MyJailShop_GetCredits(client);
-	}
-	else if (g_bFrozdark)
-	{
-		return Shop_GetClientCredits(client);
-	}
-	else if (g_bDefault)
+	if (g_bDefault)
 	{
 		return Gangs_GetCredits(client);
 	}
@@ -2615,19 +2602,7 @@ int GetClientCredits(int client)
 
 void SetClientCredits(int client, int iAmmount)
 {
-	if (g_bZepyhrus)
-	{
-		Store_SetClientCredits(client, iAmmount);
-	}
-	else if (g_bShanapu)
-	{
-		MyJailShop_SetCredits(client, iAmmount);
-	}
-	else if (g_bFrozdark)
-	{
-		Shop_SetClientCredits(client, iAmmount);
-	}
-	else if (g_bDefault)
+	if (g_bDefault)
 	{
 		Gangs_SetCredits(client, iAmmount);
 	}
@@ -2654,7 +2629,7 @@ void RemoveFromGang(int client)
 		
 		char name[MAX_NAME_LENGTH];
 		GetClientName(client, name, sizeof(name));
-		PrintToChatAll("%s %T", TAG, "GangDisbanded", LANG_SERVER, name, ga_sGangName[client]);
+		CPrintToChatAll("%s %T", TAG, "GangDisbanded", LANG_SERVER, name, ga_sGangName[client]);
 		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (IsValidClient(i) && StrEqual(ga_sGangName[i], ga_sGangName[client]) && i != client)
@@ -2672,7 +2647,7 @@ void RemoveFromGang(int client)
 		
 		char name[MAX_NAME_LENGTH];
 		GetClientName(client, name, sizeof(name));
-		PrintToChatAll("%s %T", TAG, "LeftGang", LANG_SERVER, name, ga_sGangName[client]);
+		CPrintToChatAll("%s %T", TAG, "LeftGang", LANG_SERVER, name, ga_sGangName[client]);
 		ResetVariables(client);
 	}
 }
@@ -2706,7 +2681,7 @@ void PrintToGang(int client, bool bPrintToClient = false, const char[] sMsg, any
 		{
 			if (bPrintToClient)
 			{
-				PrintToChat(i, sFormattedMsg);
+				CPrintToChat(i, sFormattedMsg);
 			}
 			else
 			{
@@ -2716,7 +2691,7 @@ void PrintToGang(int client, bool bPrintToClient = false, const char[] sMsg, any
 				}
 				else
 				{
-					PrintToChat(i, sFormattedMsg);
+					CPrintToChat(i, sFormattedMsg);
 				}
 			}
 		}
@@ -2751,7 +2726,7 @@ void ResetVariables(int client)
 	ga_bLoaded[client] = false;
 }
 
-void LastRequest()
+public void OnAvailableLR(int announce)
 {
 	if (g_bDisablePerks)
 	{
@@ -2767,7 +2742,7 @@ void LastRequest()
 			{
 				if (ga_bHasGang[i])
 				{
-					PrintToChat(i, "%s %t", TAG, "GamePerksDisabled");
+					CPrintToChat(i, "%s %t", TAG, "GamePerksDisabled");
 					if (GetClientHealth(i) > 100)
 					{
 						SetEntProp(i, Prop_Send, "m_iHealth", 100);
@@ -2781,19 +2756,6 @@ void LastRequest()
 			}
 		}
 	}
-}
-
-int GetPlayerAliveCount(int team)
-{
-	int iAmmount = 0;
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (IsValidClient(i) && IsPlayerAlive(i) && GetClientTeam(i) == team)
-		{
-			iAmmount++;
-		}
-	}
-	return iAmmount;
 }
 
 bool IsValidClient(int client, bool bAllowBots = false, bool bAllowDead = true)
