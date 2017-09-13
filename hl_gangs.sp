@@ -19,14 +19,15 @@
 #include <sdkhooks>
 #include <autoexecconfig>
 #include <hl_gangs>
-#include <hosties>
-#include <lastrequest>
 
 #undef REQUIRE_PLUGIN
+#include <hosties>
+#include <lastrequest>
 #include <store>
 #include <hl_gangs_credits>
 #include <myjailshop>
 #include <shop>
+#define REQUIRE_PLUGIN
 
 #define PLUGIN_VERSION "1.1.9"
 #define TAG " \x03[Gangs]\x04"
@@ -405,7 +406,6 @@ public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
 	g_bDisablePerks = false;
-	
 }
 
 public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
