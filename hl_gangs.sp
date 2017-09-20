@@ -21,10 +21,13 @@
 #include <hl_gangs>
 
 #undef REQUIRE_PLUGIN
+#include <hosties>
+#include <lastrequest>
 #include <store>
 #include <hl_gangs_credits>
 #include <myjailshop>
 #include <shop>
+#define REQUIRE_PLUGIN
 
 #define PLUGIN_VERSION "1.1.9"
 #define TAG " \x03[Gangs]\x04"
@@ -52,6 +55,9 @@ ConVar gcv_bDisableHealth;
 ConVar gcv_bDisableDamage;
 ConVar gcv_bDisableSize;
 ConVar gcv_fDamageModifier;
+ConVar gcv_fGravityModifier;
+ConVar gcv_fSpeedModifier;
+ConVar gcv_fHealthModifier;
 ConVar gcv_iGangSizeMaxUpgrades;
 
 /* Forwards */
@@ -245,26 +251,33 @@ public void OnPluginStart()
 
 	gcv_iMaxGangSize = AutoExecConfig_CreateConVar("hl_gangs_max_size", "6", "Initial size for a gang");
 
+	gcv_iSizePrice = AutoExecConfig_CreateConVar("hl_gangs_size_price", "20", "Price of the Size perk");
+
+	gcv_iGangSizeMaxUpgrades = AutoExecConfig_CreateConVar("hl_gangs_size_max_upgrades", "9", "The maximum amount of size upgrades that may occur");
+
 	gcv_iHealthPrice = AutoExecConfig_CreateConVar("hl_gangs_health_price", "20", "Price of the Health perk");
+
+	gcv_fHealthModifier = AutoExecConfig_CreateConVar("hl_gangs_health_modifier", "1.0", "Knife Damage perk modifier. 1.0 default");	
 
 	gcv_iDamagePrice = AutoExecConfig_CreateConVar("hl_gangs_damage_price", "20", "Price of the Damage perk");
 
+	gcv_fDamageModifier = AutoExecConfig_CreateConVar("hl_gangs_damage_modifier", "1.5", "Knife Damage perk modifier. 1.5 default");	
+
 	gcv_iGravityPrice = AutoExecConfig_CreateConVar("hl_gangs_gravity_price", "20", "Price of the Gravity perk");
 
+	gcv_fGravityModifier = AutoExecConfig_CreateConVar("hl_gangs_gravity_modifier", "0.02", "Gravity perk modifier. 0.02 default");
+
 	gcv_iSpeedPrice = AutoExecConfig_CreateConVar("hl_gangs_speed_price", "20", "Price of the Speed perk");
-	
-	gcv_iSizePrice = AutoExecConfig_CreateConVar("hl_gangs_size_price", "20", "Price of the Size perk");
+
+	gcv_fSpeedModifier = AutoExecConfig_CreateConVar("hl_gangs_speed_modifier", "0.02", "Speed perk modifier. 0.02 default");
+
 
 	gcv_iCreateGangPrice = AutoExecConfig_CreateConVar("hl_gangs_creation_price", "20", "Price of gang creation");
 
 	gcv_iRenamePrice = AutoExecConfig_CreateConVar("hl_gangs_rename_price", "40", "Price to rename");	
-	
-	gcv_iPriceModifier = AutoExecConfig_CreateConVar("hl_gangs_price_modifier", "0", "Price modifier for perks\n Set 0 to disable");
-	
-	gcv_fDamageModifier = AutoExecConfig_CreateConVar("hl_gangs_damage_modifier", "1.5", "Knife Damage perk modifier. 1.5 default");	
 
-	gcv_iGangSizeMaxUpgrades = AutoExecConfig_CreateConVar("hl_gangs_size_max_upgrades", "9", "The maximum amount of size upgrades that may occur");
-	
+	gcv_iPriceModifier = AutoExecConfig_CreateConVar("hl_gangs_price_modifier", "0", "Price modifier for perks\n Set 0 to disable");
+
 	/* Perk Disabling */
 	gcv_bDisableDamage = AutoExecConfig_CreateConVar("hl_gangs_damage", "0", "Disable the damage perk?\n Set 1 to disable");
 	gcv_bDisableHealth = AutoExecConfig_CreateConVar("hl_gangs_health", "0", "Disable the health perk?\n Set 1 to disable");
@@ -393,7 +406,6 @@ public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
 	g_bDisablePerks = false;
-	
 }
 
 public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
@@ -418,7 +430,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 			
 			if (ga_iHealth[client] != 0 && !gcv_bDisableHealth.BoolValue)
 			{
-				int iHealth = ga_iHealth[client] * 1 + 100;
+				int iHealth = ga_iHealth[client] * gcv_fHealthModifier.IntValue + 100;
 				SetEntProp(client, Prop_Send, "m_iHealth", iHealth);
 			}
 			if (ga_iGravity[client] != 0 && !gcv_bDisableGravity.BoolValue)
@@ -578,13 +590,13 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
-
-	if (GetPlayerAliveCount(2) == 1 && GetPlayerAliveCount(3) > 0)
-	{
-		LastRequest();
-	}
 	
-	if (IsValidClient(attacker) && IsValidClient(client) && client != attacker && ga_bHasGang[attacker])
+	if (GetPlayerAliveCount(2) == 1 && GetPlayerAliveCount(3) > 0 && LibraryExists("hosties"))	
+	{		
+		OnAvailableLR(0);		
+ 	}
+	
+ 	if (IsValidClient(attacker) && IsValidClient(client) && client != attacker && ga_bHasGang[attacker])
 	{
 		if (GetClientTeam(attacker) == 2 && GetClientTeam(client) == 3 && !StrEqual(ga_sGangName[attacker], ga_sGangName[client]))
 		{
@@ -2675,56 +2687,14 @@ void RemoveFromGang(int client)
 float GetClientGravityAmmount(int client)
 {
 	float fGravityAmmount;
-	switch (ga_iGravity[client])
-	{
-		case 1:
-		{
-			fGravityAmmount = 0.98;
-		}
-		case 2:
-		{
-			fGravityAmmount = 0.96;
-		}
-		case 3:
-		{
-			fGravityAmmount = 0.94;
-		}
-		case 4:
-		{
-			fGravityAmmount = 0.92;
-		}
-		case 5:
-		{
-			fGravityAmmount = 0.90;
-		}
-		case 6:
-		{
-			fGravityAmmount = 0.89;
-		}
-		case 7:
-		{
-			fGravityAmmount = 0.88;
-		}
-		case 8:
-		{
-			fGravityAmmount = 0.87;
-		}
-		case 9:
-		{
-			fGravityAmmount = 0.86;
-		}
-		case 10:
-		{
-			fGravityAmmount = 0.85;
-		}
-	}
+	fGravityAmmount = (1 - (gcv_fGravityModifier.FloatValue*ga_iGravity[client]));
 	return fGravityAmmount;
 }
 
 
 float GetClientSpeedAmmount(int client)
 {
-	return (ga_iSpeed[client]/100.0) + 1.0;
+	return (ga_iSpeed[client]*gcv_fSpeedModifier.FloatValue) + 1.0;
 }
 
 void PrintToGang(int client, bool bPrintToClient = false, const char[] sMsg, any ...)
@@ -2787,7 +2757,7 @@ void ResetVariables(int client)
 	ga_bLoaded[client] = false;
 }
 
-void LastRequest()
+public void OnAvailableLR(int announce)
 {
 	if (g_bDisablePerks)
 	{
@@ -2820,7 +2790,7 @@ void LastRequest()
 }
 
 int GetPlayerAliveCount(int team)
-{
+ {
 	int iAmmount = 0;
 	for (int i = 1; i <= MaxClients; i++)
 	{
@@ -2830,8 +2800,7 @@ int GetPlayerAliveCount(int team)
 		}
 	}
 	return iAmmount;
-}
-
+ }
 bool IsValidClient(int client, bool bAllowBots = false, bool bAllowDead = true)
 {
 	if (!(1 <= client <= MaxClients) || !IsClientInGame(client) || (IsFakeClient(client) && !bAllowBots) || IsClientSourceTV(client) || IsClientReplay(client) || (!bAllowDead && !IsPlayerAlive(client)))
