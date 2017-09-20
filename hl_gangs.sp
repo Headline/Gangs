@@ -591,7 +591,12 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 	
-	if (IsValidClient(attacker) && IsValidClient(client) && client != attacker && ga_bHasGang[attacker])
+	if (GetPlayerAliveCount(2) == 1 && GetPlayerAliveCount(3) > 0 && LibraryExists("hosties"))	
+	{		
+		OnAvailableLR(0);		
+ 	}
+	
+ 	if (IsValidClient(attacker) && IsValidClient(client) && client != attacker && ga_bHasGang[attacker])
 	{
 		if (GetClientTeam(attacker) == 2 && GetClientTeam(client) == 3 && !StrEqual(ga_sGangName[attacker], ga_sGangName[client]))
 		{
