@@ -787,12 +787,10 @@ public void SQL_Callback_CTKills(Database db, DBResultSet results, const char[] 
 	}
 	else 
 	{
-		
-		if (results.RowCount == 1 && results.FetchRow())
+		if (results.FetchRow()) // row exists
 		{
 			ga_iCTKills[client] = results.FetchInt(2);
 		}
-
 	}
 }
 
