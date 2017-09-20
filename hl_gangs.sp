@@ -2789,6 +2789,18 @@ public void OnAvailableLR(int announce)
 	}
 }
 
+int GetPlayerAliveCount(int team)
+ {
+	int iAmmount = 0;
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsValidClient(i) && IsPlayerAlive(i) && GetClientTeam(i) == team)
+		{
+			iAmmount++;
+		}
+	}
+	return iAmmount;
+ }
 bool IsValidClient(int client, bool bAllowBots = false, bool bAllowDead = true)
 {
 	if (!(1 <= client <= MaxClients) || !IsClientInGame(client) || (IsFakeClient(client) && !bAllowBots) || IsClientSourceTV(client) || IsClientReplay(client) || (!bAllowDead && !IsPlayerAlive(client)))
