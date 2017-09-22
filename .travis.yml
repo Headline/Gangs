@@ -28,8 +28,7 @@ before_script:
     - cp hl_gangs.sp build/addons/sourcemod/scripting/
     - cp hl_gangs_credits.sp build/addons/sourcemod/scripting/
     - cp hl_gangs_clantags.sp build/addons/sourcemod/scripting/
-    - cp include/hl_gangs.inc build/addons/sourcemod/scripting/include/
-    - cp include/hl_gangs_credits.inc build/addons/sourcemod/scripting/include/
+    - cp -a include/. build/addons/sourcemod/scripting/include/
     - cd build/addons/sourcemod/scripting
     - chmod +x spcomp
 script: "./compile.sh hl_gangs.sp && ./compile.sh hl_gangs_credits.sp && ./compile.sh hl_gangs_clantags.sp"
