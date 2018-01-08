@@ -604,7 +604,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 			char sQuery[300];
 			Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_statistics SET ctkills = %i WHERE gang=\"%s\"", ga_iCTKills[attacker], ga_sGangName[attacker]);
 			
-			for (int i = 0; i <= MaxClients; i++)
+			for (int i = 1; i <= MaxClients; i++)
 			{
 				if (IsValidClient(i))
 				{
