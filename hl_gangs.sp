@@ -1442,6 +1442,8 @@ void OpenInvitationMenu(int client)
 		{
 			Format(sInfoString, sizeof(sInfoString), "%i", GetClientUserId(i));
 			Format(sDisplayString, sizeof(sDisplayString), "%N", i);
+			SanitizeName(sDisplayString);
+
 			menu.AddItem(sInfoString, sDisplayString, (ga_bHasGang[i] || ga_iRank[client] == Rank_Normal)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 		}
 	}
@@ -1508,6 +1510,7 @@ void OpenGangInvitationMenu(int client)
 	int sender = GetClientOfUserId(ga_iInvitation[client]);
 	char senderName[MAX_NAME_LENGTH];
 	GetClientName(sender, senderName, sizeof(senderName));
+	SanitizeName(senderName);
 
 	Format(sDisplayString, sizeof(sDisplayString), "%T", "InviteString", client, senderName);
 	menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
@@ -2798,7 +2801,14 @@ int GetPlayerAliveCount(int team)
 		}
 	}
 	return iAmmount;
- }
+}
+
+// to avoid this https://user-images.githubusercontent.com/3672466/28637962-0d324952-724c-11e7-8b27-15ff021f0a59.png
+void SanitizeName(char[] name)
+{
+	ReplaceString(name, MAX_NAME_LENGTH, "#", "?");
+}
+
 bool IsValidClient(int client, bool bAllowBots = false, bool bAllowDead = true)
 {
 	if (!(1 <= client <= MaxClients) || !IsClientInGame(client) || (IsFakeClient(client) && !bAllowBots) || IsClientSourceTV(client) || IsClientReplay(client) || (!bAllowDead && !IsPlayerAlive(client)))
