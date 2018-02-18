@@ -59,6 +59,7 @@ ConVar gcv_fGravityModifier;
 ConVar gcv_fSpeedModifier;
 ConVar gcv_fHealthModifier;
 ConVar gcv_iGangSizeMaxUpgrades;
+ConVar gcv_bTerroristOnly;
 
 /* Forwards */
 Handle g_hOnMainMenu;
@@ -277,6 +278,8 @@ public void OnPluginStart()
 	gcv_iRenamePrice = AutoExecConfig_CreateConVar("hl_gangs_rename_price", "40", "Price to rename");	
 
 	gcv_iPriceModifier = AutoExecConfig_CreateConVar("hl_gangs_price_modifier", "0", "Price modifier for perks\n Set 0 to disable");
+	
+	gcv_bTerroristOnly = AutoExecConfig_CreateConVar("hl_gangs_terrorist_only", "1", "Determines if perks are only for terrorists\n Set 1 for default jailbreak behavior");
 
 	/* Perk Disabling */
 	gcv_bDisableDamage = AutoExecConfig_CreateConVar("hl_gangs_damage", "0", "Disable the damage perk?\n Set 1 to disable");
@@ -413,7 +416,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	int client = GetClientOfUserId(event.GetInt("userid"));
 
 	
-	if (IsValidClient(client) && GetClientTeam(client) == 2)
+	if (IsValidClient(client) && IsPlayerGangable(client))
 	{
 		if (ga_bHasGang[client])
 		{
@@ -525,7 +528,7 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 		return Plugin_Continue;
 	}
 	
-	if (!g_bDisablePerks && IsValidClient(attacker) && IsValidClient(victim) && ga_bHasGang[attacker] && attacker != victim && GetClientTeam(victim) == 3 && GetClientTeam(attacker) == 2)
+	if (!g_bDisablePerks && IsValidClient(attacker) && IsValidClient(victim) && ga_bHasGang[attacker] && attacker != victim && GetClientTeam(victim) == 3 && IsPlayerGangable(attacker))
 	{
 		char sWeapon[32];
 		GetClientWeapon(attacker, sWeapon, sizeof(sWeapon)); 
@@ -598,7 +601,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	
  	if (IsValidClient(attacker) && IsValidClient(client) && client != attacker && ga_bHasGang[attacker])
 	{
-		if (GetClientTeam(attacker) == 2 && GetClientTeam(client) == 3 && !StrEqual(ga_sGangName[attacker], ga_sGangName[client]))
+		if (IsPlayerGangable(attacker) && GetClientTeam(client) == 3 && !StrEqual(ga_sGangName[attacker], ga_sGangName[client]))
 		{
 			ga_iCTKills[attacker]++;
 			char sQuery[300];
@@ -827,7 +830,7 @@ public Action Command_Accept(int client, int args)
 		ReplyToCommand(client, "[SM] %t", "PlayerNotInGame");
 		return Plugin_Handled;
 	}
-	if (GetClientTeam(client) != 2)
+	if (IsPlayerGangable(client))
 	{
 		ReplyToCommand(client, "[SM] %t", "WrongTeam");
 		return Plugin_Handled;
@@ -879,7 +882,7 @@ public Action Command_Gang(int client, int args)
 		ReplyToCommand(client, "[SM] %t", "PlayerNotInGame");
 		return Plugin_Handled;
 	}
-	if (GetClientTeam(client) != 2)
+	if (IsPlayerGangable(client))
 	{
 		ReplyToCommand(client, "[SM] %t", "WrongTeam");
 		return Plugin_Handled;
@@ -1068,7 +1071,7 @@ void StartGangCreation(int client)
 		ReplyToCommand(client, "[SM] %t", "PlayerNotInGame", client);
 		return;
 	}
-	if (GetClientTeam(client) != 2)
+	if (IsPlayerGangable(client))
 	{
 		ReplyToCommand(client, "[SM] %t", "WrongTeam", client);
 		return;
@@ -2770,7 +2773,7 @@ public void OnAvailableLR(int announce)
 	{
 		if (IsValidClient(i))
 		{
-			if (IsPlayerAlive(i) && GetClientTeam(i) == 2)
+			if (IsPlayerAlive(i) && IsPlayerGangable(i))
 			{
 				if (ga_bHasGang[i])
 				{
@@ -2816,4 +2819,14 @@ bool IsValidClient(int client, bool bAllowBots = false, bool bAllowDead = true)
 		return false;
 	}
 	return true;
+}
+
+bool IsPlayerGangable(int client)
+{
+	if (!gcv_bTerroristOnly.BoolValue)
+	{
+		return true;
+	}
+	
+	return GetClientTeam(client) == 2;
 }
