@@ -830,7 +830,7 @@ public Action Command_Accept(int client, int args)
 		ReplyToCommand(client, "[SM] %t", "PlayerNotInGame");
 		return Plugin_Handled;
 	}
-	if (IsPlayerGangable(client))
+	if (!IsPlayerGangable(client))
 	{
 		ReplyToCommand(client, "[SM] %t", "WrongTeam");
 		return Plugin_Handled;
@@ -882,7 +882,7 @@ public Action Command_Gang(int client, int args)
 		ReplyToCommand(client, "[SM] %t", "PlayerNotInGame");
 		return Plugin_Handled;
 	}
-	if (IsPlayerGangable(client))
+	if (!IsPlayerGangable(client))
 	{
 		ReplyToCommand(client, "[SM] %t", "WrongTeam");
 		return Plugin_Handled;
@@ -1071,7 +1071,7 @@ void StartGangCreation(int client)
 		ReplyToCommand(client, "[SM] %t", "PlayerNotInGame", client);
 		return;
 	}
-	if (IsPlayerGangable(client))
+	if (!IsPlayerGangable(client))
 	{
 		ReplyToCommand(client, "[SM] %t", "WrongTeam", client);
 		return;
