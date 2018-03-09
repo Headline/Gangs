@@ -29,7 +29,7 @@
 #include <shop>
 #define REQUIRE_PLUGIN
 
-#define PLUGIN_VERSION "1.1.9"
+#define PLUGIN_VERSION "1.1.9-$$version$"
 #define TAG " \x03[Gangs]\x04"
 
 /* Compiler Instructions */
