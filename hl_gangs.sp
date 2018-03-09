@@ -241,7 +241,7 @@ public void OnPluginStart()
 	
 	AutoExecConfig_SetFile("hl_gangs");
 	
-	AutoExecConfig_CreateConVar("hl_gangs_version", PLUGIN_VERSION, "Headline's Gangs Plugin : Version", FCVAR_NOTIFY|FCVAR_DONTRECORD);
+	AutoExecConfig_CreateConVar("hl_gangs_version", GANGS_VERSION, "Headline's Gangs Plugin : Version", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	
 	gcv_bPluginEnabled = AutoExecConfig_CreateConVar("hl_gangs_enabled", "1", "Enable the plugin? (1 = Yes, 0 = No)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	
