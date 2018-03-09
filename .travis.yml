@@ -26,10 +26,12 @@ before_script:
     - wget "https://raw.githubusercontent.com/shanapu/MyJailShop/master/addons/sourcemod/scripting/include/shop/register.inc"
     - cd ../../../../../..
     - cp hl_gangs.sp build/addons/sourcemod/scripting/
+    - cp versioning.py build/addons/sourcemod/scripting/
     - cp hl_gangs_credits.sp build/addons/sourcemod/scripting/
     - cp hl_gangs_clantags.sp build/addons/sourcemod/scripting/
     - cp -a include/. build/addons/sourcemod/scripting/include/
     - cd build/addons/sourcemod/scripting
+    - python versioning.py
     - chmod +x spcomp
 script: "./compile.sh hl_gangs.sp && ./compile.sh hl_gangs_credits.sp && ./compile.sh hl_gangs_clantags.sp"
 before_deploy:
