@@ -4,7 +4,7 @@ import os.path
 def get_clean_path(array):
 	somestr = ""
 	for x in range(0, len(array) - 1):
-		somestr += array[x] + "\\"
+		somestr += array[x] + "/"
 	return somestr
 
 def do_version_replace(current):
@@ -24,7 +24,7 @@ path = get_clean_path(os.path.realpath(__file__).split("\\"))
 
 for dirpath, dirnames, filenames in os.walk(path):
 	for filename in filenames:
-		current = dirpath + "\\" + filename
+		current = dirpath + "/" + filename
 		if filename.endswith(".sp"):
 			print("Versioning: " + current)
 			do_version_replace(current)
