@@ -20,7 +20,7 @@ def do_version_replace(current):
 	with open(current, 'w') as f:
 		f.writelines(oldlist)
 		
-path = get_clean_path(os.path.realpath(__file__).split("\\"))
+path = get_clean_path(os.path.realpath('__file__').split("\\"))
 
 for dirpath, dirnames, filenames in os.walk(path):
 	for filename in filenames:
