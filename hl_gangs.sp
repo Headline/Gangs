@@ -702,7 +702,6 @@ public void SQLCallback_CheckSQL_Player(Database db, DBResultSet results, const 
 			
 			ga_bIsPlayerInDatabase[client] = true;
 			ga_bHasGang[client] = true;
-			ga_bLoaded[client] = true;
 
 			ga_iHealth[client] = 0;
 			ga_iDamage[client] = 0;
@@ -792,6 +791,7 @@ public void SQL_Callback_CTKills(Database db, DBResultSet results, const char[] 
 	{
 		if (results.FetchRow()) // row exists
 		{
+			ga_bLoaded[client] = true;
 			ga_iCTKills[client] = results.FetchInt(2);
 		}
 	}
@@ -2439,7 +2439,9 @@ void UpdateSQL(int client)
 {
 	DeleteDuplicates();
 	
-	if (ga_bHasGang[client])
+	/* We need to ensure that users are completely loaded in before calling save queries. 
+	 * This may prevent errors where CT kills are reset to zero. */
+	if (ga_bHasGang[client] && ga_bLoaded[client])
 	{
 		GetClientAuthId(client, AuthId_Steam2, ga_sSteamID[client], sizeof(ga_sSteamID[]));
 		
