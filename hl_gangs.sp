@@ -940,12 +940,23 @@ void OpenGangsMenu(int client)
 	Menu menu = CreateMenu(GangsMenu_Callback, MenuAction_Select | MenuAction_End | MenuAction_DisplayItem);
 	if (ga_bHasGang[client])
 	{
+		char sGangSizeString[64];
+		if (!gcv_bDisableSize.BoolValue)
+		{
+			Format(sGangSizeString, sizeof(sGangSizeString), "%i/%i", ga_iGangSize[client], gcv_iMaxGangSize.IntValue + ga_iSize[client]);
+		}
+		else
+		{
+			Format(sGangSizeString, sizeof(sGangSizeString), "%i/0", ga_iGangSize[client]);
+		}
+		
+		Format(sGangSizeString, sizeof(sGangSizeString), "");
 		char sString[128];
-		Format(sString, sizeof(sString), "%T \n%T %i \n%T: %s %i/%i", "GangsMenuTitle", client
+		Format(sString, sizeof(sString), "%T \n%T %i \n%T: %s %s", "GangsMenuTitle", client
 																		, "Credits", client
 																		, GetClientCredits(client)
 																		, "CurrentGang", client
-																		, ga_sGangName[client], ga_iGangSize[client], gcv_iMaxGangSize.IntValue + ga_iSize[client]);
+																		, ga_sGangName[client], sGangSizeString);
 		SetMenuTitle(menu, sString);
 	}
 	else
