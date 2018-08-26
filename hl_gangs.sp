@@ -2244,7 +2244,7 @@ public int AdministrationKickMenu_CallBack(Menu menu, MenuAction action, int par
 					GetClientAuthId(i, AuthId_Steam2, sSteamID, sizeof(sSteamID));
 					if (StrEqual(sSteamID, sTempArray[0]))
 					{
-						ResetVariables(i);
+						ResetVariables(i, false);
 					}
 				}
 			}
@@ -2681,10 +2681,10 @@ void RemoveFromGang(int client)
 		{
 			if (IsValidClient(i) && StrEqual(ga_sGangName[i], ga_sGangName[client]) && i != client)
 			{
-				ResetVariables(i);
+				ResetVariables(i, false);
 			}
 		}
-		ResetVariables(client);
+		ResetVariables(client, false);
 	}
 	else
 	{
@@ -2695,7 +2695,7 @@ void RemoveFromGang(int client)
 		char name[MAX_NAME_LENGTH];
 		GetClientName(client, name, sizeof(name));
 		PrintToChatAll("%s %T", TAG, "LeftGang", LANG_SERVER, name, ga_sGangName[client]);
-		ResetVariables(client);
+		ResetVariables(client, false);
 	}
 }
 
@@ -2746,7 +2746,7 @@ void PrintToGang(int client, bool bPrintToClient = false, const char[] sMsg, any
 }
 
 
-void ResetVariables(int client)
+void ResetVariables(int client, bool full = true)
 {
 	ga_iRank[client] = Rank_Invalid;
 	ga_iGangSize[client] = -1;
@@ -2769,8 +2769,11 @@ void ResetVariables(int client)
 	ga_bHasGang[client] = false;
 	ga_bRename[client] = false;
 	ga_fChangedGravity[client] = 0.0;
-	ga_sSteamID[client] = "";
-	ga_bLoaded[client] = false;
+	if (full)
+	{
+		ga_sSteamID[client] = "";
+		ga_bLoaded[client] = false;
+	}
 }
 
 public void OnAvailableLR(int announce)
