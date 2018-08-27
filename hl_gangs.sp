@@ -91,6 +91,8 @@ bool ga_bIsPlayerInDatabase[MAXPLAYERS + 1] = {false, ...};
 bool ga_bIsGangInDatabase[MAXPLAYERS + 1] = {false, ...};
 bool ga_bHasGang[MAXPLAYERS + 1] = {false, ...};
 bool ga_bRename[MAXPLAYERS + 1] = {false, ...};
+bool ga_bHasPref[MAXPLAYERS + 1] = {false, ...};
+bool ga_bBlockInvites[MAXPLAYERS + 1] = {false, ...};
 bool g_bDisablePerks = false;
 
 /* Supported Store Modules */
@@ -636,6 +638,7 @@ public void SQLCallback_Connect(Database db, const char[] error, any data)
 		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_players` (`id` int(20) NOT NULL AUTO_INCREMENT, `steamid` varchar(32) NOT NULL, `playername` varchar(32) NOT NULL, `gang` varchar(32) NOT NULL, `rank` int(16) NOT NULL, `invitedby` varchar(32) NOT NULL, `date` int(32) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
 		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_groups` (`id` int(20) NOT NULL AUTO_INCREMENT, `gang` varchar(32) NOT NULL, `health` int(16) NOT NULL, `damage` int(16) NOT NULL, `gravity` int(16) NOT NULL, `speed` int(16) NOT NULL, `size` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
 		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_statistics` (`id` int(20) NOT NULL AUTO_INCREMENT, `gang` varchar(32) NOT NULL, `ctkills` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
+		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_prefs` (`id` int(20) NOT NULL AUTO_INCREMENT, `steamid` varchar(32) NOT NULL, `pref` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
 		g_hDatabase.Query(SQLCallback_Void, "ALTER TABLE `hl_gangs_groups` MODIFY COLUMN `gang` varchar(32) NOT NULL unique", 1);
 		g_hDatabase.Query(SQLCallback_Void, "ALTER TABLE `hl_gangs_statistics` MODIFY COLUMN `gang` varchar(32) NOT NULL unique", 1);
 		
@@ -667,6 +670,42 @@ void LoadSteamID(int client)
 			char sQuery[300];
 			Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_players WHERE steamid=\"%s\"", ga_sSteamID[client]);
 			g_hDatabase.Query(SQLCallback_CheckSQL_Player, sQuery, GetClientUserId(client));
+			
+			Format(sQuery, sizeof(sQuery), "SELECT pref FROM hl_gangs_prefs WHERE steamid=\"%s\"", ga_sSteamID[client]);
+			g_hDatabase.Query(SQLCallback_GetPreference, sQuery, GetClientUserId(client));
+		}
+	}
+}
+
+public void SQLCallback_GetPreference(Database db, DBResultSet results, const char[] error, int data)
+{
+	if (db == null)
+	{
+		SetDB();
+	}
+	if (results == null)
+	{
+		LogError(error);
+		return;
+	}
+
+	int client = GetClientOfUserId(data);
+	if (!IsValidClient(client))
+	{
+		return;
+	}
+	else 
+	{
+		if (results.RowCount > 0)
+		{
+			results.FetchRow();
+			ga_bBlockInvites[client] = view_as<bool>(results.FetchInt(0));
+			ga_bHasPref[client] = true;
+		}
+		else
+		{
+			ga_bBlockInvites[client] = false;
+			ga_bHasPref[client] = false;
 		}
 	}
 }
@@ -998,6 +1037,16 @@ void OpenGangsMenu(int client)
 	Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "TopGangs", client);
 	menu.AddItem("topgangs", sDisplayBuffer);
 
+	if (!ga_bBlockInvites[client])
+	{
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "BlockInvites", client);
+	}
+	else
+	{
+		Format(sDisplayBuffer, sizeof(sDisplayBuffer), "%T", "UnblockInvites", client);
+	}
+	menu.AddItem("blockinvites", sDisplayBuffer);
+
 	Call_StartForward(g_hOnMainMenu);
 	Call_PushCell(client);
 	Call_PushCell(menu);
@@ -1056,6 +1105,10 @@ public int GangsMenu_Callback(Menu menu, MenuAction action, int param1, int para
 			{
 				StartOpeningTopGangsMenu(param1);
 			}
+			else if (StrEqual(sInfo, "blockinvites"))
+			{
+				BlockInvites(param1);
+			}
 
 		}
 		case MenuAction_End:
@@ -1066,7 +1119,27 @@ public int GangsMenu_Callback(Menu menu, MenuAction action, int param1, int para
 	return;
 }
 
-
+void BlockInvites(int client)
+{
+	if (!IsValidClient(client))
+	{
+		return;
+	}
+	
+	ga_bBlockInvites[client] = !ga_bBlockInvites[client]; // toggle
+	
+	char sQuery[128];
+	if (!ga_bHasPref[client])
+	{
+		Format(sQuery, sizeof(sQuery), "INSERT INTO hl_gangs_prefs (pref, steamid) VALUES(%i, \"%s\")", ga_bBlockInvites[client], ga_sSteamID[client]);
+		ga_bHasPref[client] = true;
+	}
+	else
+	{
+		Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_prefs SET pref=%i WHERE steamid=\"%s\"", ga_bBlockInvites[client], ga_sSteamID[client]);
+	}
+	g_hDatabase.Query(SQLCallback_Void, sQuery);
+}
 
 /*****************************************************************
 ***********************  GANG CREATION  **************************
@@ -1457,7 +1530,7 @@ void OpenInvitationMenu(int client)
 			Format(sDisplayString, sizeof(sDisplayString), "%N", i);
 			SanitizeName(sDisplayString);
 
-			menu.AddItem(sInfoString, sDisplayString, (ga_bHasGang[i] || ga_iRank[client] == Rank_Normal)?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
+			menu.AddItem(sInfoString, sDisplayString, (ga_bHasGang[i] || ga_iRank[client] == Rank_Normal || ga_bBlockInvites[i])?ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 		}
 	}
 
@@ -2768,6 +2841,8 @@ void ResetVariables(int client, bool full = true)
 	ga_bIsGangInDatabase[client] = false;
 	ga_bHasGang[client] = false;
 	ga_bRename[client] = false;
+	ga_bBlockInvites[client] = false;
+	ga_bHasPref[client] = false;
 	ga_fChangedGravity[client] = 0.0;
 	if (full)
 	{
