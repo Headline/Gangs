@@ -82,6 +82,7 @@ int ga_iTimer[MAXPLAYERS + 1] = {0, ...};
 int ga_iCTKills[MAXPLAYERS + 1] = {0, ...};
 int ga_iTempInt[MAXPLAYERS + 1] = {0, ...};
 int ga_iTempInt2[MAXPLAYERS + 1] = {0, ...};
+int ga_iTempInt3[MAXPLAYERS + 1] = {0, ...};
 int ga_iLastRequests[MAXPLAYERS + 1] = {0, ...};
 int g_iGangAmmount = 0;
 
@@ -2335,7 +2336,7 @@ public void SQL_Callback_TopMenu(Database db, DBResultSet results, const char[] 
 			
 			results.FetchString(1, sGangName, sizeof(sGangName));
 			
-			Format(sInfoString, sizeof(sInfoString), "%i;%s;%i", ga_iTempInt2[client], sGangName, (gcv_bCTKillsOrLRs.BoolValue)?results.FetchInt(2):results.FetchInt(3));
+			Format(sInfoString, sizeof(sInfoString), "%i;%s;%i;%i", ga_iTempInt2[client], sGangName, results.FetchInt(2), results.FetchInt(3));
 
 			menu.AddItem(sInfoString, sGangName);
 		}
@@ -2354,17 +2355,17 @@ public int TopGangsMenu_Callback(Menu menu, MenuAction action, int param1, int p
 		{
 			char sInfo[300];
 			char sQuery[300];
-			char sTempArray[3][128];
+			char sTempArray[4][128];
 			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 
-			ExplodeString(sInfo, ";", sTempArray, 3, sizeof(sTempArray[]));
+			ExplodeString(sInfo, ";", sTempArray, 4, sizeof(sTempArray[]));
 
 			ga_iTempInt2[param1] = StringToInt(sTempArray[0]);
 			ga_iTempInt[param1] = StringToInt(sTempArray[2]);
+			ga_iTempInt3[param1] = StringToInt(sTempArray[3]);
 			
 			Format(sQuery, sizeof(sQuery), "SELECT * FROM `hl_gangs_players` WHERE `gang` = \"%s\" AND `rank` = 2", sTempArray[1]);
 			g_hDatabase.Query(SQL_Callback_GangStatistics, sQuery, GetClientUserId(param1));
-
 		}
 		case MenuAction_Cancel:
 		{
@@ -2429,10 +2430,14 @@ public void SQL_Callback_GangStatistics(Database db, DBResultSet results, const 
 		if (gcv_bCTKillsOrLRs.BoolValue)
 		{
 			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "CTKills", client, ga_iTempInt[client]);
+			menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
+			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "LastRequests", client, ga_iTempInt3[client]);
 		}
 		else
 		{
-			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "LastRequests", client, ga_iTempInt[client]);
+			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "LastRequests", client, ga_iTempInt3[client]);
+			menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
+			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "CTKills", client, ga_iTempInt[client]);
 		}
 		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
@@ -2784,6 +2789,7 @@ void ResetVariables(int client, bool full = true)
 	ga_iLastRequests[client] = 0;
 	ga_iTempInt[client] = 0;
 	ga_iTempInt2[client] = 0;
+	ga_iTempInt3[client] = 0;
 	ga_sGangName[client] = "";
 	ga_sInvitedBy[client] = "";
 	ga_bSetName[client] = false;
