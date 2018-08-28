@@ -60,6 +60,7 @@ ConVar gcv_fHealthModifier;
 ConVar gcv_iGangSizeMaxUpgrades;
 ConVar gcv_bTerroristOnly;
 ConVar gcv_bCTKillsOrLRs;
+ConVar gcv_bTKillsOnly;
 
 /* Forwards */
 Handle g_hOnMainMenu;
@@ -286,6 +287,8 @@ public void OnPluginStart()
 	gcv_bTerroristOnly = AutoExecConfig_CreateConVar("hl_gangs_terrorist_only", "1", "Determines if perks are only for terrorists\n Set 1 for default jailbreak behavior");
 
 	gcv_bCTKillsOrLRs = AutoExecConfig_CreateConVar("hl_gangs_stats_mode", "1", "Sets the type of statistic tracking\n Set 1 for ct kills, 0 for last requests (hosties required)");
+
+	gcv_bTKillsOnly = AutoExecConfig_CreateConVar("hl_gangs_track_tkills_only", "1", "Determines whether only terrorist kills will be tracked");
 
 	/* Perk Disabling */
 	gcv_bDisableDamage = AutoExecConfig_CreateConVar("hl_gangs_damage", "0", "Disable the damage perk?\n Set 1 to disable");
@@ -607,8 +610,15 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	
  	if (IsValidClient(attacker) && IsValidClient(client) && client != attacker && ga_bHasGang[attacker])
 	{
-		if (IsPlayerGangable(attacker) && GetClientTeam(client) == 3 && !StrEqual(ga_sGangName[attacker], ga_sGangName[client]))
+		if (IsPlayerGangable(attacker) && !StrEqual(ga_sGangName[attacker], ga_sGangName[client]))
 		{
+			if (gcv_bTKillsOnly.BoolValue)
+			{
+				if (GetClientTeam(client) != 3)
+				{
+					return;
+				}
+			}
 			ga_iCTKills[attacker]++;
 			char sQuery[300];
 			Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_statistics SET ctkills = %i WHERE gang=\"%s\"", ga_iCTKills[attacker], ga_sGangName[attacker]);
@@ -2502,7 +2512,10 @@ public void SQL_Callback_GangStatistics(Database db, DBResultSet results, const 
 
 		if (gcv_bCTKillsOrLRs.BoolValue)
 		{
-			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "CTKills", client, ga_iTempInt[client]);
+			if (gcv_bTKillsOnly.BoolValue)
+				Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "CTKills", client, ga_iTempInt[client]);
+			else
+				Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "Kills", client, ga_iTempInt[client]);
 			menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "LastRequests", client, ga_iTempInt3[client]);
 		}
@@ -2510,7 +2523,10 @@ public void SQL_Callback_GangStatistics(Database db, DBResultSet results, const 
 		{
 			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "LastRequests", client, ga_iTempInt3[client]);
 			menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
-			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "CTKills", client, ga_iTempInt[client]);
+			if (gcv_bTKillsOnly.BoolValue)
+				Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "CTKills", client, ga_iTempInt[client]);
+			else
+				Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "Kills", client, ga_iTempInt[client]);
 		}
 		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
