@@ -59,6 +59,7 @@ ConVar gcv_fSpeedModifier;
 ConVar gcv_fHealthModifier;
 ConVar gcv_iGangSizeMaxUpgrades;
 ConVar gcv_bTerroristOnly;
+ConVar gcv_bCTKillsOrLRs;
 
 /* Forwards */
 Handle g_hOnMainMenu;
@@ -81,6 +82,8 @@ int ga_iTimer[MAXPLAYERS + 1] = {0, ...};
 int ga_iCTKills[MAXPLAYERS + 1] = {0, ...};
 int ga_iTempInt[MAXPLAYERS + 1] = {0, ...};
 int ga_iTempInt2[MAXPLAYERS + 1] = {0, ...};
+int ga_iTempInt3[MAXPLAYERS + 1] = {0, ...};
+int ga_iLastRequests[MAXPLAYERS + 1] = {0, ...};
 int g_iGangAmmount = 0;
 
 char ga_sGangName[MAXPLAYERS + 1][128];
@@ -281,6 +284,8 @@ public void OnPluginStart()
 	gcv_iPriceModifier = AutoExecConfig_CreateConVar("hl_gangs_price_modifier", "0", "Price modifier for perks\n Set 0 to disable");
 	
 	gcv_bTerroristOnly = AutoExecConfig_CreateConVar("hl_gangs_terrorist_only", "1", "Determines if perks are only for terrorists\n Set 1 for default jailbreak behavior");
+
+	gcv_bCTKillsOrLRs = AutoExecConfig_CreateConVar("hl_gangs_stats_mode", "1", "Sets the type of statistic tracking\n Set 1 for ct kills, 0 for last requests (hosties required)");
 
 	/* Perk Disabling */
 	gcv_bDisableDamage = AutoExecConfig_CreateConVar("hl_gangs_damage", "0", "Disable the damage perk?\n Set 1 to disable");
@@ -641,6 +646,7 @@ public void SQLCallback_Connect(Database db, const char[] error, any data)
 		g_hDatabase.Query(SQLCallback_Void, "CREATE TABLE IF NOT EXISTS `hl_gangs_prefs` (`id` int(20) NOT NULL AUTO_INCREMENT, `steamid` varchar(32) NOT NULL, `pref` int(16) NOT NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1", 1);
 		g_hDatabase.Query(SQLCallback_Void, "ALTER TABLE `hl_gangs_groups` MODIFY COLUMN `gang` varchar(32) NOT NULL unique", 1);
 		g_hDatabase.Query(SQLCallback_Void, "ALTER TABLE `hl_gangs_statistics` MODIFY COLUMN `gang` varchar(32) NOT NULL unique", 1);
+		g_hDatabase.Query(SQLCallback_Void, "ALTER TABLE `hl_gangs_statistics` ADD COLUMN `lastrequests` int(16) NOT NULL", 1);
 		
 		DeleteDuplicates();
 	}
@@ -802,7 +808,7 @@ public void SQLCallback_CheckSQL_Groups(Database db, DBResultSet results, const 
 			ga_iSize[client] = results.FetchInt(6);
 
 			char sQuery[300];
-			Format(sQuery, sizeof(sQuery), "SELECT * FROM hl_gangs_statistics WHERE gang=\"%s\"", ga_sGangName[client]);
+			Format(sQuery, sizeof(sQuery), "SELECT ctkills,lastrequests FROM hl_gangs_statistics WHERE gang=\"%s\"", ga_sGangName[client]);
 			g_hDatabase.Query(SQL_Callback_CTKills, sQuery, GetClientUserId(client));
 		}
 	}
@@ -830,7 +836,8 @@ public void SQL_Callback_CTKills(Database db, DBResultSet results, const char[] 
 		if (results.FetchRow()) // row exists
 		{
 			ga_bLoaded[client] = true;
-			ga_iCTKills[client] = results.FetchInt(2);
+			ga_iCTKills[client] = results.FetchInt(0);
+			ga_iLastRequests[client] = results.FetchInt(1);
 		}
 	}
 }
@@ -904,6 +911,7 @@ public Action Command_Accept(int client, int args)
 	ga_iGravity[client] = ga_iGravity[sender];
 	ga_iSpeed[client] = ga_iSpeed[sender];
 	ga_iCTKills[client] = ga_iCTKills[sender];
+	ga_iLastRequests[client] = ga_iLastRequests[sender];
 	ga_iSize[client] = ga_iSize[sender];
 	ga_iGangSize[client] = ++ga_iGangSize[sender];
 
@@ -1646,6 +1654,7 @@ public int SentInviteMenu_Callback(Menu menu, MenuAction action, int param1, int
 				ga_iSpeed[param1] = ga_iSpeed[sender];
 				ga_iSize[param1] = ga_iSize[sender];
 				ga_iCTKills[param1] = ga_iCTKills[sender];
+				ga_iLastRequests[param1] = ga_iLastRequests[sender];
 				ga_iGangSize[param1] = ++ga_iGangSize[sender];
 
 				
@@ -2344,7 +2353,14 @@ void StartOpeningTopGangsMenu(int client)
 {
 	if (IsValidClient(client))
 	{
-		g_hDatabase.Query(SQL_Callback_TopMenu, "SELECT * FROM hl_gangs_statistics ORDER BY ctkills DESC", GetClientUserId(client));
+		if (gcv_bCTKillsOrLRs.BoolValue)
+		{
+			g_hDatabase.Query(SQL_Callback_TopMenu, "SELECT * FROM hl_gangs_statistics ORDER BY ctkills DESC", GetClientUserId(client));
+		}
+		else
+		{
+			g_hDatabase.Query(SQL_Callback_TopMenu, "SELECT * FROM hl_gangs_statistics ORDER BY lastrequests DESC", GetClientUserId(client));
+		}
 	}
 }
 
@@ -2393,7 +2409,7 @@ public void SQL_Callback_TopMenu(Database db, DBResultSet results, const char[] 
 			
 			results.FetchString(1, sGangName, sizeof(sGangName));
 			
-			Format(sInfoString, sizeof(sInfoString), "%i;%s;%i", ga_iTempInt2[client], sGangName, results.FetchInt(2));
+			Format(sInfoString, sizeof(sInfoString), "%i;%s;%i;%i", ga_iTempInt2[client], sGangName, results.FetchInt(2), results.FetchInt(3));
 
 			menu.AddItem(sInfoString, sGangName);
 		}
@@ -2412,17 +2428,17 @@ public int TopGangsMenu_Callback(Menu menu, MenuAction action, int param1, int p
 		{
 			char sInfo[300];
 			char sQuery[300];
-			char sTempArray[3][128];
+			char sTempArray[4][128];
 			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 
-			ExplodeString(sInfo, ";", sTempArray, 3, sizeof(sTempArray[]));
+			ExplodeString(sInfo, ";", sTempArray, 4, sizeof(sTempArray[]));
 
 			ga_iTempInt2[param1] = StringToInt(sTempArray[0]);
 			ga_iTempInt[param1] = StringToInt(sTempArray[2]);
+			ga_iTempInt3[param1] = StringToInt(sTempArray[3]);
 			
 			Format(sQuery, sizeof(sQuery), "SELECT * FROM `hl_gangs_players` WHERE `gang` = \"%s\" AND `rank` = 2", sTempArray[1]);
 			g_hDatabase.Query(SQL_Callback_GangStatistics, sQuery, GetClientUserId(param1));
-
 		}
 		case MenuAction_Cancel:
 		{
@@ -2484,7 +2500,18 @@ public void SQL_Callback_GangStatistics(Database db, DBResultSet results, const 
 		Format(sDisplayString, sizeof(sDisplayString), "%T : %s", "CreatedBy", client, sTempArray[1]);
 		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
-		Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "CTKills", client, ga_iTempInt[client]);
+		if (gcv_bCTKillsOrLRs.BoolValue)
+		{
+			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "CTKills", client, ga_iTempInt[client]);
+			menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
+			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "LastRequests", client, ga_iTempInt3[client]);
+		}
+		else
+		{
+			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "LastRequests", client, ga_iTempInt3[client]);
+			menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
+			Format(sDisplayString, sizeof(sDisplayString), "%T : %i ", "CTKills", client, ga_iTempInt[client]);
+		}
 		menu.AddItem("", sDisplayString, ITEMDRAW_DISABLED);
 
 		menu.ExitBackButton = true;
@@ -2653,11 +2680,11 @@ public void SQL_Callback_LoadStatistics(Database db, DBResultSet results, const 
 	char sQuery[300];
 	if (!ga_bIsGangInDatabase[client])
 	{
-		Format(sQuery, sizeof(sQuery), "INSERT INTO hl_gangs_statistics (gang, ctkills) VALUES(\"%s\", %i)", ga_sGangName[client], ga_iCTKills[client]);
+		Format(sQuery, sizeof(sQuery), "INSERT INTO hl_gangs_statistics (gang, ctkills, lastrequests) VALUES(\"%s\", %i, %i)", ga_sGangName[client], ga_iCTKills[client], ga_iLastRequests[client]);
 	}
 	else
 	{
-		Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_statistics SET ctkills=%i WHERE gang=\"%s\"", ga_iCTKills[client], ga_sGangName[client]);
+		Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_statistics SET ctkills=%i,lastrequests=%i WHERE gang=\"%s\"", ga_iCTKills[client], ga_iLastRequests[client], ga_sGangName[client]);
 	}
 
 	g_hDatabase.Query(SQLCallback_Void, sQuery);
@@ -2832,8 +2859,10 @@ void ResetVariables(int client, bool full = true)
 	ga_iSize[client] = 0;
 	ga_iTimer[client] = 0;
 	ga_iCTKills[client] = 0;
+	ga_iLastRequests[client] = 0;
 	ga_iTempInt[client] = 0;
 	ga_iTempInt2[client] = 0;
+	ga_iTempInt3[client] = 0;
 	ga_sGangName[client] = "";
 	ga_sInvitedBy[client] = "";
 	ga_bSetName[client] = false;
@@ -2858,6 +2887,7 @@ public void OnAvailableLR(int announce)
 		return;
 	}
 	
+	/* Disable Perks */
 	g_bDisablePerks = true;
 	for (int i = 1; i <= MaxClients; i++)
 	{
@@ -2877,10 +2907,29 @@ public void OnAvailableLR(int announce)
 						SetEntPropFloat(i, Prop_Send, "m_flLaggedMovementValue", 1.0);
 					}
 					SetEntityGravity(i, 1.0);
+					
+					/* Update Gang Member's Last Request Count */
+					for (int j = 0; j <= MaxClients; j++)
+					{
+						if (IsValidClient(j))
+						{
+							if (ga_bHasGang[j] && StrEqual(ga_sGangName[j], ga_sGangName[i]))
+							{
+								ga_iLastRequests[j]++;
+							}
+						}
+					}
+					
+					char sQuery[256];
+					/* Reflect it to db */
+					Format(sQuery, sizeof(sQuery), "UPDATE hl_gangs_statistics SET lastrequests = %i WHERE gang=\"%s\"", ga_iLastRequests[i], ga_sGangName[i]);
+					g_hDatabase.Query(SQLCallback_Void, sQuery);
 				}
 			}
 		}
 	}
+	
+
 }
 
 int GetPlayerAliveCount(int team)
