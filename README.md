@@ -1,4 +1,7 @@
 [![Build Status](https://travis-ci.org/Headline/Gangs.svg?branch=master)](https://travis-ci.org/Headline/Gangs)
+
+## This project is no longer supported by myself, although fixes will be accepted if you Pull Request
+
 # [CS:GO] Jailbreak Gangs
 This is a gangs plugin designed for Jailbreak servers. Simply put this plugin allows people to create gangs, invite their friends, and work together to unlock perks (health, damage, gravity, speed, gang size).
 
