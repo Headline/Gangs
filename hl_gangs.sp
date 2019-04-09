@@ -17,6 +17,8 @@
  
 #include <sourcemod>
 #include <sdkhooks>
+#include <sdktools>
+#include <cstrike>
 #include <autoexecconfig>
 #include <hl_gangs>
 
