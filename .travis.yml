@@ -5,7 +5,6 @@ addons:
 env:
     - SMVERSION=1.8
     - SMVERSION=1.9
-    - SMVERSION=1.10
 before_script:
     - mkdir build && cd build
     - wget "http://www.sourcemod.net/latest.php?version=$SMVERSION&os=linux" -O sourcemod-$SMVERSION-linux.tar.gz
